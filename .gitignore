@@ -1,0 +1,10 @@
+# Python bytecode
+*.pyc
+
+# vim swap files
+*.swp
+*.*~
+
+# test data
+
+test_files/*

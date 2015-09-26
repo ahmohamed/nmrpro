@@ -1,0 +1,193 @@
+import numpy as np
+from nmrglue.process.proc_base import ifft, fft, rev, cs, tp_hyper
+from nmrglue.fileio import bruker, pipe
+from nmrglue.fileio.fileiobase import unit_conversion
+
+from collections import OrderedDict
+import dill
+
+
+class NMRSpectrum(np.ndarray):
+    @classmethod
+    def fromFile(cls, file, format):
+        reader = {
+            'Bruker': bruker.read,
+            'Pipe': pipe.read
+        }[format]
+
+        method = {
+            'Bruker': cls.fromBruker,
+            'Pipe': cls.fromPipe
+        }[format]
+
+        dic, data = reader(file)
+        return method(dic, data)
+
+    @classmethod
+    def fromBruker(cls, dic, data):
+        u = bruker.guess_udic(dic, data)
+        data = bruker.remove_digital_filter(dic, data, True)
+        u["original_format"] = 'Bruker'
+        u["Name"] = None
+
+        # The data is reversed using the scheme recommened by NMRPipe
+        # For details refer to http://spin.niddk.nih.gov/NMRPipe/ref/nmrpipe/rev.html
+        data = rev(data)
+        data = cs(data, 1)
+
+        car = dic['acqus']['O1']
+        sw = dic['acqus']['SW_h']
+        size = u[0]['size']
+        obs = dic['acqus']['BF1']
+        cplx = u[0]['complex']
+        uc = unit_conversion(size, cplx, sw, obs, car)
+
+        return cls(data, udic=u, uc=uc)
+
+    @classmethod
+    def fromPipe(cls, dic, data):
+        u = pipe.guess_udic(dic, data)
+        u["original_format"] = 'Pipe'
+        u["Name"] = None
+
+        uc = [pipe.make_uc(dic, data, dim) for dim in range(0, data.ndim)]
+
+        return cls(data, udic, uc=uc)
+
+    def __new__(cls, input_array, udic, uc=None, history=None):
+        if input_array.ndim == 1:
+            cls = NMRSpectrum1D
+        elif input_array.ndim == 2:
+            cls = NMRSpectrum2D
+        obj = np.asarray(input_array).view(cls)
+
+        # add the new attribute to the created instance
+        if uc is None:
+            uc = [unit_conversion(udic['size'],
+                                    udic['complex'],
+                                    udic['sw'],
+                                    udic['obs'],
+                                    udic['car'])
+                for i in range(0, udic['ndim'])]
+
+        if type(uc) is list and len(uc) == 1:
+            uc = uc[0]
+
+        if history is None:
+            history = OrderedDict()
+            history["original"] = lambda x: input_array
+
+        obj.udic = udic
+        obj.uc = uc
+        obj.history = history
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        self.udic = getattr(obj, 'udic', None)
+        self.uc = getattr(obj, 'uc', None)
+        self.history = getattr(obj, 'history', None)
+    
+    def __array_wrap__(self, obj):
+        if obj.shape == ():
+            return obj[()]    # if ufunc output is scalar, return it
+        else:
+            return np.ndarray.__array_wrap__(self, obj)
+
+    ################# Data processing  #####################
+    def setData(self, input_array):
+        if self.shape != input_array.shape:
+            return NMRSpectrum(input_array, self.uc, self.info, self.history)
+
+        self.data = input_array.data
+
+        return self
+
+    def fapply(self, fun, message):
+        self.history[message] = fun
+        return self.setData(fun(self))
+
+    def fapplyAtIndex(self, fun, message, idx):
+        hist_keys = self.history.keys()
+        hist_keys.insert(idx, message)
+
+        hist_funcs = self.history.values()
+        hist_funcs.insert(idx, fun)
+        self.history = OrderedDict(zip(hist_keys, hist_funcs))
+        return self.setData(reduce(lambda x, y: y(x), self.history.values(), self))
+
+    def fapplyAfter(self, fun, message, element):
+        try:
+            idx = self.history.keys().index(element) + 1
+        except ValueError:
+            return self.fapply(fun, message)
+
+        return self.fapplyAtIndex(fun, message, idx)
+
+    def fapplyBefore(self, fun, message, element):
+        try:
+            idx = self.history.keys().index(element)
+        except ValueError:
+            return self.fapply(fun, message)
+
+        return self.fapplyAtIndex(fun, message, idx)
+
+    def fapplyAt(self, fun, message, element=None):
+        if element is None:
+            element = message
+        try:
+            idx = self.history.keys().index(element)
+        except ValueError:
+            return self.fapply(fun, message)
+
+        self.history[message] = fun
+        return self.setData(reduce(lambda x, y: y(x), self.history.values(), self))
+        
+    def original_data(self):
+        return self.history["original"](self)
+
+    def time_domain(self):
+        if self.info["FFT"]:
+            return ifft(self)
+        else:
+            return self
+
+    def freq_domain(self):
+        if self.info["FFT"]:
+            return self
+        else:
+            return fft(self)
+
+
+class NMRSpectrum1D(NMRSpectrum):
+    def __array_finalize__(self, obj):
+        super(NMRSpectrum1D, self).__array_finalize__(obj)
+        #print("final1d")
+
+        #def __array_wrap__(self, obj):
+        #    super(NMRSpectrum1D, self).__array_wrap__(obj)
+
+
+class NMRSpectrum2D(NMRSpectrum):
+    def __array_finalize__(self, obj):
+        super(NMRSpectrum2D, self).__array_finalize__(obj)
+        #print("final2d", getattr(obj, 'uc', None))
+
+    def tp(self):
+        if self.dtype.name.startswith('complex'):
+            return tp_hyper(self, True)
+        else:
+            return self.transpose()
+
+
+class NMRDataset():
+    def __init__(self, nd, *specs):
+        self.nd = nd
+        self.specList = list()
+        for s in specs:
+            self.specList.append(s)
+    
+    def __iter__(self):
+        for s in self.specList:
+            yield s
