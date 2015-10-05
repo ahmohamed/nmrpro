@@ -1,8 +1,10 @@
 from os.path import isfile, isdir, basename, exists, join
 from os import walk
 from tarfile import open
+import tempfile
 from fnmatch import filter
 #import re
+temp = tempfile.gettempdir()
 
 def get_files(filepath):  
     # if the input is a file, then it may be a tar, NMRPipe or ucsf file
@@ -10,13 +12,14 @@ def get_files(filepath):
         if filepath.endswith((".tar.gz",".tar")):
             if(filepath.endswith(".tar")): filebasename = basename(filepath)[:-4]
             else: filebasename = basename(filepath)[:-7]
-
-            if not exists('./temp/'+filebasename):
+            
+            temp_dir = join(temp, filebasename)
+            if not exists(temp_dir):
                 tar = open(filepath)
-                tar.extractall(path='./temp/'+filebasename)
+                tar.extractall(path=temp_dir)
                 tar.close()
             
-            return get_files('./temp/'+filebasename)
+            return get_files(temp_dir)
             
         
         if filepath.endswith((".ft", ".ft2", ".fid")):
@@ -37,7 +40,8 @@ def get_files(filepath):
         
         if len(files) > 0: return files
                     
-    return [(filepath, 'None')]
+    #return [(filepath, 'None')]
+    return None
 
 def find_pdata(filepath, ndim):
     pdata_name = {
