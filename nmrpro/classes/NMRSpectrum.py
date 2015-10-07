@@ -4,7 +4,7 @@ import nmrglue.process.pipe_proc as pp
 from nmrglue.fileio import bruker, pipe
 from nmrglue.fileio.fileiobase import unit_conversion, uc_from_udic
 from collections import OrderedDict
-from ..utils import make_uc_pipe
+from ..utils import make_uc_pipe, num_unit
 from ..NMRFileManager import find_pdata
 from copy import deepcopy
 
@@ -74,79 +74,19 @@ class DataUdic(np.ndarray):
 
 class NMRSpectrum(DataUdic):
     @classmethod
-    def fromFile(cls, file, format):
-        method = {
-            'Bruker': cls.fromBruker,
-            'Pipe': cls.fromPipe
-        }[format]
-
-        #dic, data = reader(file)
-        return method(file)
+    def fromFile(cls, *args, **kwargs):
+        from ..readers import fromFile
+        return fromFile(*args, **kwargs)
+        
+    @classmethod
+    def fromBruker(cls, *args, **kwargs):
+        from ..readers import fromBruker
+        return fromBruker(*args, **kwargs)
 
     @classmethod
-    def fromBruker(cls, file, reverse_data=True, remove_filter=True, read_pdata=True):
-        dic, data = bruker.read(file);
-        if(read_pdata):
-            pdata_file = find_pdata(file, data.ndim)
-            
-            if(pdata_file is not None):
-                data = bruker.read_pdata(pdata_file)[1]
-            else: read_pdata = False
-        
-        if remove_filter and not read_pdata:
-            data = bruker.remove_digital_filter(dic, data, True)
-    
-        u = bruker.guess_udic(dic, data)
-        u["original_format"] = 'Bruker'
-        u["Name"] = str(file)
-        if(read_pdata):
-            for i in range(0, data.ndim):
-                u[i]['complex'] = False
-                u[i]['freq'] = True
-
-        # The data is reversed using the scheme recommened by NMRPipe
-        # For details: http://spin.niddk.nih.gov/NMRPipe/ref/nmrpipe/rev.html
-        if reverse_data: pass
-            #data = rev(data)
-            #data = cs(data, 1)
-        
-        uc = []
-        for i in range(0, data.ndim):
-            acqus = ['acqus', 'acqu2s', 'acqu3s', 'acqu4s'][i]
-            car = dic[acqus]['O1']
-            sw = dic[acqus]['SW_h']
-            size = u[i]['size']
-            obs = dic[acqus]['BF1']
-            cplx = u[i]['complex']
-            uc.append(unit_conversion(size, cplx, sw, obs, car))
-
-        return cls(data, udic=u, uc=uc)
-
-    @classmethod
-    def fromPipe(cls, file):
-        dic, data = pipe.read(file)
-        if dic['FDTRANSPOSED'] == 1.:
-            dic, data = pp.tp(dic, data, auto=True)
-
-        u = pipe.guess_udic(dic, data)
-        u["original_format"] = 'Pipe'
-        u["Name"] = str(file)
-        
-        uc = [make_uc_pipe(dic, data, dim) for dim in range(0, data.ndim)]
-        #uc = [pipe.make_uc(dic, data, dim) for dim in range(0, data.ndim)]
-        # make_uc function orders the dimensions by FDDIMORDER parameter
-        # I want the order to match the udic's
-        #if dic["FDDIMORDER"][0] == 1.:
-        #    uc.reverse()
-        
-        
-        # dic, data = pp.ft(dic, data, auto=True)
-        # dic, data = pp.tp(dic, data, auto=True)
-        # dic, data = pp.ft(dic, data, auto=True)
-        # dic, data = pp.tp(dic, data, auto=True)
-        
-        #print(data.shape)
-        return cls(data, u, uc=uc)
+    def fromPipe(cls, *args, **kwargs):
+        from ..readers import fromPipe
+        return fromPipe(*args, **kwargs)
 
     def __new__(cls, input_array, udic, parent=None, uc=None):
         if input_array.ndim == 1:
@@ -175,8 +115,8 @@ class NMRSpectrum(DataUdic):
                                     udic[i]['car'])
                 for i in range(0, udic['ndim'])]
 
-        if type(uc) is list and len(uc) == 1:
-            uc = uc[0]
+        # if type(uc) is list and len(uc) == 1:
+        #     uc = uc[0]
 
         
         obj.udic = udic
@@ -193,6 +133,36 @@ class NMRSpectrum(DataUdic):
         self.history = getattr(obj, 'history', None)
         self.original = getattr(obj, 'original', None)
 
+    
+    def __getitem__(self, idx):
+        if isinstance(idx, tuple):
+            idx = tuple( self._convert_unit(element, i) for i, element in enumerate(idx) )
+        else:
+            idx = self._convert_unit(idx)
+        
+        return super(NMRSpectrum, self).__getitem__(idx)
+    
+    def _convert_slice(self, s, dim=0):
+        start = self._convert_unit(s.start)
+        stop = self._convert_unit(s.stop)
+        if isinstance(s.step, basestring):
+            step_unit = num_unit(s.step)[1]
+            step = self._convert_unit(s.step) - self._convert_unit('0'+step_unit)
+        else : step = s.step
+    
+        return slice(start, stop, step)
+    
+    def _convert_unit(self, idx, dim=0):
+        if isinstance(idx, slice):
+            return self._convert_slice(idx)
+    
+        if isinstance(idx, basestring):
+            #TODO: testing on 2D dimensions, negative indices, very small steps
+            # testing if/when uc should be updated, esp. in states encoding.
+            return self.uc[dim].i(*num_unit(idx))
+        else:
+            return idx
+    
     ################# Data processing  #####################
     def setData(self, input_array):
         if hasattr(input_array, 'udic'):

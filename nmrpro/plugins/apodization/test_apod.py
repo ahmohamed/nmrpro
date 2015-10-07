@@ -14,10 +14,10 @@ import numpy.testing as ts
 
 class apod_1DTest(unittest.TestCase):
     def setUp(self):
-        dic, data = read("./nmr/test_files/Bruker_1D/", read_pulseprogram=False)
+        dic, data = read("./test_files/Bruker_1D/", read_pulseprogram=False)
         self.dic = dic
         self.data = data
-        self.filename = "./nmr/test_files/Bruker_1D/"
+        self.filename = "./test_files/Bruker_1D/"
     
     def test_apod(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
@@ -154,10 +154,10 @@ class apod_1DTest(unittest.TestCase):
 
 class apod_2DTest(unittest.TestCase):
     def setUp(self):
-        dic, data = pipe.read("./nmr/test_files/bmse000281_hsqc.fid")        
+        dic, data = pipe.read("./test_files/bmse000281_hsqc.fid")        
         self.dic = dic
         self.data = data
-        self.filename = "./nmr/test_files/bmse000281_hsqc.fid"
+        self.filename = "./test_files/bmse000281_hsqc.fid"
     
     
     def test_apod_pipe(self):

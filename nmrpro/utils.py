@@ -3,26 +3,14 @@ from nmrglue.fileio.fileiobase import unit_conversion
 def str2bool(v):
   return v.lower() in ("yes", "true", "t", "1")
 
-def asComplex(re, im):
-    return re + im*1j
-    
-def deinterlace(x):
-    x_cos = x[1::2,:]
-    x_sin = x[0::2,:]
-    
-    A = 1j*x_sin.real; A += x_cos.real
-    B = 1j*x_sin.imag; B += x_cos.imag
-    return A,B
-
-def reinterlace(A,B):
-    Xcos = asComplex(A.real, B.real);
-    Xsin = asComplex(A.imag, B.imag);
-    c = np.empty((Xcos.shape[0]+Xsin.shape[0], Xcos.shape[1]), dtype=Xcos.dtype)
-    c[0::2,:] = Xsin
-    c[1::2,:] = Xcos
-    
-    return c
-    
+def num_unit(s):
+    numeric = '0123456789-.'
+    for i,c in enumerate(s+' '):
+        if c not in numeric:
+            break
+    number = float(s[:i])
+    unit = s[i:].lstrip()
+    return number, unit    
     
 def make_uc_pipe(dic, data, dim=-1):
     if dim == -1:

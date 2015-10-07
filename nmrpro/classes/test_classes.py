@@ -5,11 +5,11 @@ import nmrglue as ng
 
 class DatasetTest(unittest.TestCase):
     def setUp(self):
-        spec1d = NMRSpectrum.fromFile('./nmr/test_files/Bruker_1D/', 'Bruker')
+        spec1d = NMRSpectrum.fromFile('./test_files/Bruker_1D/', 'Bruker')
         ds = NMRDataset(1, spec1d, spec1d, spec1d)
         self.ds = ds
         self.spec1d = spec1d
-        self.fid_file = './nmr/test_files/bmse000281_hsqc.fid'
+        self.fid_file = './test_files/bmse000281_hsqc.fid'
 
     def test_Dataset_init_iter(self):
         ds = self.ds

@@ -7,10 +7,10 @@ from numpy import array
 
 class fft_1DTest(unittest.TestCase):
     def setUp(self):
-        dic, data = ng.bruker.read("./nmr/test_files/Bruker_1D/", read_pulseprogram=False)
+        dic, data = ng.bruker.read("./test_files/Bruker_1D/", read_pulseprogram=False)
         self.dic = dic
         self.data = data
-        self.filename = "./nmr/test_files/Bruker_1D/"
+        self.filename = "./test_files/Bruker_1D/"
         #self.string = 'Hello World'
     
     def test_fft_norm(self):
@@ -45,10 +45,10 @@ class fft_1DTest(unittest.TestCase):
                 
 class fft_2DTest(unittest.TestCase):
     def setUp(self):
-        dic, data = ng.pipe.read("./nmr/test_files/bmse000281_hsqc.fid")        
+        dic, data = ng.pipe.read("./test_files/bmse000281_hsqc.fid")        
         self.dic = dic
         self.data = data
-        self.filename = "./nmr/test_files/bmse000281_hsqc.fid"
+        self.filename = "./test_files/bmse000281_hsqc.fid"
         
     def test_fft_pipe(self):
         dic, data = self.dic, self.data
