@@ -1,11 +1,8 @@
 import numpy as np
-from nmrglue.process.proc_base import ifft, fft, rev, cs, tp_hyper, c2ri
-import nmrglue.process.pipe_proc as pp
-from nmrglue.fileio import bruker, pipe
-from nmrglue.fileio.fileiobase import unit_conversion, uc_from_udic
+from nmrglue.process.proc_base import ifft, fft, tp_hyper, c2ri
+from nmrglue.fileio.fileiobase import unit_conversion
 from collections import OrderedDict
-from ..utils import make_uc_pipe, num_unit
-from ..NMRFileManager import find_pdata
+from ..utils import num_unit
 from copy import deepcopy
 
 class DataUdic(np.ndarray):
@@ -106,7 +103,6 @@ class NMRSpectrum(DataUdic):
             if uc is None: uc = parent.uc
         
         # add the new attribute to the created instance
-        print(udic['ndim'])
         if uc is None:
             uc = [unit_conversion(udic[i]['size'],
                                     udic[i]['complex'],
@@ -114,9 +110,6 @@ class NMRSpectrum(DataUdic):
                                     udic[i]['obs'],
                                     udic[i]['car'])
                 for i in range(0, udic['ndim'])]
-
-        # if type(uc) is list and len(uc) == 1:
-        #     uc = uc[0]
 
         
         obj.udic = udic
