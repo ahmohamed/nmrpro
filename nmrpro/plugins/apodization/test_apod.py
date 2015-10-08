@@ -211,6 +211,6 @@ class apod_2DTest(unittest.TestCase):
         dic3, data3 = pipep.tp(dic3, data3, auto=True)
         
         # test auto class implementation
-        apoded = webApod(spec2d,{'F1_em':'true', 'F1_em_lb':'0.2', 'F2_gm':'True', 
-                                 'F2_gm_g1':"1", 'F2_gm_g2':"0.5", 'F2_gm_g3':"0.5"})
+        apoded = webApod(spec2d,{'F2_em':'true', 'F2_em_lb':'0.2', 'F1_gm':'True', 
+                                 'F1_gm_g1':"1", 'F1_gm_g2':"0.5", 'F1_gm_g3':"0.5"})
         ts.assert_equal(data3, apoded, '2D Apodized spectrum doesnt match pipe_proc.em and gm on F1 and F2')

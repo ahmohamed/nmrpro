@@ -1,5 +1,5 @@
 from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
-from ...decorators import inputs, both_dimensions, perSpectrum
+from ...decorators import both_dimensions, perSpectrum
 import numpy as np
 from ...utils import str2bool
 
