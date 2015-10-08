@@ -1,6 +1,6 @@
 import nmrglue as ng
 from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D, DataUdic
-from ...decorators import inputs, ndarray_subclasser, perSpectrum
+from ...decorators import ndarray_subclasser, perSpectrum
 
 from nmrglue.process.proc_base import zf_size
 
