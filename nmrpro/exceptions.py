@@ -1,11 +1,8 @@
 class SpecError(Exception):
     '''Base exception class for NMR Django app'''
 
-class PluginNotFoundError(SpecError):
-    '''Raised when an unavailbale plugin is requested'''
-
-class SessionError(SpecError):
-    '''Raised when session data is unavailable'''
+class NoNMRDataError(SpecError):
+    '''Raised when path provided does not contain NMR files.'''
 
 class DomainError(SpecError):
     '''Raised when an incorrect domian (time, frequency) is provided.
