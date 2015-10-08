@@ -1,7 +1,9 @@
 from .ps import webPhase
+from .ps import *
 from .. import JSinput as inp
-from ..PluginMount import SpecPlugin, JSCommand
+from ..PluginMount import JSCommand
 
+__all__ = ['ps', 'autops']
 #print('phasing imported')    
 class Autophase(JSCommand):
     menu_path = ['Processing', 'Phase Correction', 'Automatic phase correction']
