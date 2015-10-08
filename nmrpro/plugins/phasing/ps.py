@@ -1,4 +1,4 @@
-from nmrglue.process.proc_base import ps, fft_positive
+import nmrglue.process.proc_base as p
 import numpy as np
 from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
 from ...decorators import ndarray_subclasser, perSpectrum, both_dimensions
@@ -8,6 +8,8 @@ from ..FFT.fft import fft_positive
 from scipy.optimize import minimize
 from scipy.stats import gmean
 
+__all__ = ['ps', 'autops']
+
 def str2bool(v):
   return v.lower() in ("yes", "true", "t", "1")
 
@@ -15,17 +17,17 @@ def str2bool(v):
 ######## Objective functions ##########
 # nD compatible
 def max_integ(x, data):
-    integ = np.trapz(ps(data, p0=x[0]*18000, p1=x[1]*18000).real)
+    integ = np.trapz(p.ps(data, p0=x[0]*18000, p1=x[1]*18000).real)
     for i in range(1,data.udic['ndim']): integ = np.trapz(integ)
     return -integ
 
 # nD compatible
 def min_point(x, data):
-    obj = -ps(data,p0=x[0]*18000, p1=x[1]*18000).real.min()
+    obj = -p.ps(data,p0=x[0]*18000, p1=x[1]*18000).real.min()
     return obj
 
 def whiten(x, data):
-    a = np.abs(ps(data, p0=x[0]*18000, p1=x[1]*18000).real)
+    a = np.abs(p.ps(data, p0=x[0]*18000, p1=x[1]*18000).real)
     t = float(np.mean(a))
     return np.sum(a > t)
 
@@ -34,7 +36,7 @@ def min_entropy(x, data):
     if data.ndim > 1:
         return gmean([min_entropy(x, row) for row in data])
     
-    _data = ps(data,p0=x[0]*18000, p1=x[1]*18000).real
+    _data = p.ps(data,p0=x[0]*18000, p1=x[1]*18000).real
     drv = np.absolute(np.diff(_data))
     hst = drv / sum(drv)
     g = np.ptp(data.real)
@@ -45,7 +47,7 @@ def min_entropy(x, data):
 
 
 def peak_minima(x, s):
-    s0 = ps(s, p0=x[0]*18000, p1=x[1]*18000)
+    s0 = p.ps(s, p0=x[0]*18000, p1=x[1]*18000)
     s = np.real(s0).flatten()
 
     i = np.argmax(s)
@@ -56,7 +58,7 @@ def peak_minima(x, s):
     return np.abs(mina - minb)
 
 
-def auto_ps(data, obj_fun):
+def opt_ps(data, obj_fun):
     obj_0 = lambda x, data: obj_fun([x,0], data)
     phase0 = minimize(obj_0, (0,), method='Nelder-Mead', args=(data,)).x[0]
     
@@ -64,12 +66,12 @@ def auto_ps(data, obj_fun):
     phase1 = minimize(obj_1, (0,), method='Nelder-Mead', args=(data,)).x[0]
     return phase0*18000,phase1*18000
 
-def auto_ps0(data, obj_fun):
+def opt_ps0(data, obj_fun):
     obj_0 = lambda x, data: obj_fun([x,0], data)
     phase0 = minimize(obj_0, (0,), method='Nelder-Mead', args=(data,)).x[0]
     return phase0*18000,0
 
-def auto_ps_sim(data, obj_fun):
+def opt_ps_sim(data, obj_fun):
     phase0,phase1 = minimize(
         obj_fun, (0.,0.),
         method='Nelder-Mead',
@@ -137,19 +139,43 @@ def atan(data, p0only):
 
 
 
+@perSpectrum
 @both_dimensions
-def correct_phase(spec, phc):
-    corrected = ndarray_subclasser(ps)(spec, *phc)
+def ps(spec, phc):
+    corrected = ndarray_subclasser(p.ps)(spec, *phc)
     dim = corrected.udic['ndim']-1
     corrected.udic[dim]['phc'] = phc
     return corrected
 
+@perSpectrum
+@both_dimensions
+def autops(spec, method = 'minpoint', p0only=False):
+    objfn = {
+        "entropy":min_entropy,
+        "integ":max_integ,
+        "minpoint":min_point,
+        "peakmin":peak_minima,
+        "whiten":whiten,
+        "atan":None        
+    }[method]
+    
+    if method is not None: # not atan
+        opt_function = opt_ps0 if p0only else opt_ps
+        phc = opt_function(spec, objfn)
+        return ps(spec, phc).di()
+    
+    # atan
+    phc = atan(spec, p0only)
+    return ps(spec, phc).di()
+
+
+@perSpectrum
 @both_dimensions
 def optimize_phase(spec, opt_function, obj_function, ret='phc'): # FIXME: can we do that?
     phc = opt_function(spec, obj_function)
     
     # is it important that phc caculations on F2 direction be done on F1 corrected?
-    return correct_phase(spec, phc).di()
+    return ps(spec, phc).di()
     
 
 @both_dimensions
@@ -157,9 +183,9 @@ def phc_from_args(spec, args):
     alg = args.get('a','opt')
     if alg == 'opt':
         opt = {
-            'auto0':auto_ps0,
-            'auto':auto_ps, 
-            'autosim':auto_ps_sim,
+            'auto0':opt_ps0,
+            'auto':opt_ps, 
+            'autosim':opt_ps_sim,
         }[args.get('optfn','autosim')]
         
         objfn = {
@@ -177,7 +203,7 @@ def phc_from_args(spec, args):
     elif alg == 'man':
         phc = (float(args.get('p0',0)), float(args.get('p1',0)))
     
-    return correct_phase(spec, phc)
+    return ps(spec, phc)
 
 
 @perSpectrum
@@ -189,124 +215,9 @@ def webPhase(nmrSpec, args):
     for i in range(0, corrected.udic['ndim']):
         phc['F'+ str(i+1)+ '_phc'] = corrected.udic[i]['phc']
     
-    print(phc)
-    fn = lambda s: correct_phase(s, **phc)
+    # print(phc)
+    fn = lambda s: ps(s, **phc)
     
     if "phase" in nmrSpec.history.keys():
         return nmrSpec.fapplyAt(fn, "phase", "phase")
     return nmrSpec.fapplyAfter(fn, "phase", "FFT")
-
-
-###############################################################
-################# Backup methods. Deleted before release ######
-def ps2d(data, p00, p01,p10,p11):
-    #Apply to direct dimension (columns)
-    data = ps(data, p00, p01)
-    
-    #Indirect dimension
-    fn = lambda s: ps(s, p10, p11)
-    A,B = deinterlace(data)
-    A = np.apply_along_axis(fn, 0, A)
-    B = np.apply_along_axis(fn, 0, B)
-    data = reinterlace(A,B)
-    
-    return data
-
-def whiten_backup(x, data):
-    sp = ps(data,p0=x[0], p1=x[1])
-    x = sp.real
-    A = np.abs(sp)
-    t =  np.mean(A)
-    
-    N = sum(x[-t < x < t])
-    return -N
-
-# ACME: Automated phase Correction based on Minimization of Entropy
-import scipy as sp
-def autophase(nmr_data, pc_init=None, algorithm='Peak_minima'):
-    if pc_init is None:
-        pc_init = [0, 0]
-
-    fn = {
-        'ACME': autophase_ACME,
-        'Peak_minima': autophase_PeakMinima,
-    }[algorithm]
-
-    opt = sp.optimize.fmin(fn, x0=pc_init, args=(nmr_data.reshape(1, -1)[:500], ))
-    return ps(nmr_data, p0=opt[0], p1=opt[1]), opt
-
-
-# TODO: fix the need to data.reshape(1, -1)
-def autophase_ACME(x, s):
-    stepsize = 1
-
-    n, l = s.shape
-    phc0, phc1 = x
-
-    s0 = ps(s, p0=phc0, p1=phc1)
-    s = np.real(s0)
-    maxs = np.max(s)
-
-    # Calculation of first derivatives
-    ds1 = np.abs((s[2:l] - s[0:l - 1]) / (stepsize * 2))
-    p1 = ds1 / np.sum(ds1)
-
-    # Calculation of entropy
-    m, k = p1.shape
-
-    for i in range(0, m):
-        for j in range(0, k):
-            if (p1[i, j] == 0):  # %in case of ln(0)
-                p1[i, j] = 1
-
-    h1 = -p1 * np.log(p1)
-    h1s = np.sum(h1)
-
-    # Calculation of penalty
-    pfun = 0.0
-    as_ = s - np.abs(s)
-    sumas = np.sum(as_)
-
-    if (sumas < 0):
-        pfun = pfun + np.sum((as_ / 2) ** 2)
-
-    p = 1000 * pfun
-
-    # The value of objective function
-    return h1s + p
-
-
-
-def peak_minima2d(x, s):
-    s0 = correct_phase(s, [(x[0]*18000, x[1]*18000),(x[2]*18000, x[3]*18000)])
-    s = np.real(s0).flatten()
-
-    i = np.argmax(s)
-    peak = s[i]
-    mina = np.min(s[i - 100:i])
-    minb = np.min(s[i:i + 100])
-
-    return np.abs(mina - minb)
-
-def whiten2d(x, data):
-    a = np.abs(correct_phase(data, [(x[0]*18000, x[1]*18000),(x[2]*18000, x[3]*18000)]).real)
-    t = float(np.mean(a))
-    print(x, data.shape)
-    return np.sum(a > t)
-
-def obj2d(x, data):
-    a = np.abs(correct_phase(data, [(x[0]*18000, x[1]*18000),(x[2]*18000, x[3]*18000)]).real)
-    t = float(np.mean(a))
-    print(x, data.shape)
-    return np.sum(a > t)
-
-    
-def opt2d(data, obj_fun):
-    x = minimize(
-        obj_fun, (0.,0., 0., 0.),
-        method='Nelder-Mead',
-        args=(data,)
-    ).x
-    return [(x[0]*18000, x[1]*18000),(x[2]*18000, x[3]*18000)]
-
-
