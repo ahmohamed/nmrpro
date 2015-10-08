@@ -1,9 +1,21 @@
 from nmrglue.fileio import bruker, pipe
 from nmrglue.fileio.fileiobase import unit_conversion, uc_from_udic
 from .utils import make_uc_pipe
-from .NMRFileManager import find_pdata
+from .NMRFileManager import get_files, find_pdata
 from classes.NMRSpectrum import NMRSpectrum
-def fromFile(file, format):
+import nmrglue.process.pipe_proc as pp
+from .exceptions import NoNMRDataError
+
+def fromFile(file, format='auto'):
+    if format == 'auto':
+        files = get_files(file)
+        if files is None:
+            raise NoNMRDataError('The path supplied has no NMR spectra: %s' %url)
+        elif len(files) == 1:
+            return fromFile(*files[0])
+        else:
+            return [fromFile(*f) for f in files]
+            
     method = {
         'Bruker': fromBruker,
         'Pipe': fromPipe
@@ -30,16 +42,8 @@ def fromBruker(file, remove_filter=True, read_pdata=True):
         for i in range(0, data.ndim):
             u[i]['complex'] = False
             u[i]['freq'] = True
-
-    uc = []
-    for i in range(0, data.ndim):
-        acqus = ['acqus', 'acqu2s', 'acqu3s', 'acqu4s'][i]
-        car = dic[acqus]['O1']
-        sw = dic[acqus]['SW_h']
-        size = u[i]['size']
-        obs = dic[acqus]['BF1']
-        cplx = u[i]['complex']
-        uc.append(unit_conversion(size, cplx, sw, obs, car))
+    
+    uc  = [uc_from_udic(u, dim) for dim in range(0, data.ndim)]
 
     return NMRSpectrum(data, udic=u, uc=uc)
 
