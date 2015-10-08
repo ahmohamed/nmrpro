@@ -1,9 +1,9 @@
-import nmrglue as ng
 from ...classes.NMRSpectrum import NMRSpectrum, DataUdic
-from ...decorators import inputs, ndarray_subclasser, both_dimensions, perSpectrum
+from ...decorators import ndarray_subclasser, both_dimensions, perSpectrum
 from warnings import warn
-
 import nmrglue.process.proc_base as p
+
+__all__ = ['fft', 'fft_positive', 'fft_norm']
 
 def fft1d(f):
     def fn(s):
@@ -17,17 +17,17 @@ def fft1d(f):
         return ffted
     return fn
 
-@inputs(DataUdic)
+@perSpectrum
 @both_dimensions
 def fft(s):
     return fft1d( ndarray_subclasser( p.fft ) )(s)
 
-@inputs(DataUdic)
+@perSpectrum
 @both_dimensions
 def fft_positive(s):
     return fft1d( ndarray_subclasser( p.fft_positive ) )(s)
 
-@inputs(DataUdic)
+@perSpectrum
 @both_dimensions
 def fft_norm(s):
     return fft1d( ndarray_subclasser( p.fft_norm ) )(s)
