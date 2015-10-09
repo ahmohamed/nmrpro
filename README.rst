@@ -2,8 +2,8 @@ NMRPRo python package
 =====================
 
 NMRPro reads and processes different types of NMR spectra. This package is released as part of an integrated web component 
-`NMRPro<http://mamitsukalab.org/nmrpro/>`_. The package can also be used directly from python. Refer to the 
-`tutorial</tutorial/NMRPro_tutorial.ipynb>`_ for examples.
+`NMRPro <http://mamitsukalab.org/nmrpro/>`_. The package can also be used directly from python. Refer to the 
+`tutorial </tutorial/NMRPro_tutorial.ipynb>`_ for examples.
 
 
 
