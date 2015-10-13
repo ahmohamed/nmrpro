@@ -9,8 +9,9 @@ from .exceptions import NoNMRDataError
 def fromFile(file, format='auto'):
     if format == 'auto':
         files = get_files(file)
+        print('files', files)
         if files is None:
-            raise NoNMRDataError('The path supplied has no NMR spectra: %s' %url)
+            raise NoNMRDataError('The path supplied has no NMR spectra: %s' %file)
         elif len(files) == 1:
             return fromFile(*files[0])
         else:
