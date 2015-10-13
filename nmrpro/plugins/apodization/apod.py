@@ -142,7 +142,7 @@ def args_to_function(s, args):
     inv = str2bool(args.get('inv', "False"))
     c = float(args.get('c', "1.0"))
     apod = accumulate_apod_function(s, filtered_f, args)
-    print('inv: ',inv)
+
     if inv:
         apod = 1 / apod
     
@@ -163,18 +163,3 @@ def webApod(nmrSpec, args):
     if "apod" in nmrSpec.history.keys():
         return nmrSpec.fapplyAt(fn, "apod", "apod")
     return nmrSpec.fapplyAfter(fn, "apod", "original")
-
-
-# Based on MVAPACK implementation
-# TODO: Testing
-# def apodize2d(fid,fun):
-#     #Apply to direct dimension (columns)
-#     wfid = np.apply_along_axis(fn, 1, fid)
-#
-#     #Indirect dimension
-#     A,B = deinterlace(wfid)
-#     A = np.apply_along_axis(fn, 0, A)
-#     B = np.apply_along_axis(fn, 0, B)
-#     wfid = reinterlace(A,B)
-#
-#     return wfid

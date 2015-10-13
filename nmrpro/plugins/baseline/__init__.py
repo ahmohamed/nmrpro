@@ -120,17 +120,17 @@ class AdvBaselineCorrection2D(JSCommand):
         }),
     }
     
-class SolventFilter(JSCommand):
-    menu_path = ['Processing', 'Solvent Filter']
-    fun = staticmethod(SOL)
-    nd = [1,2]
-    title = 'Solvent filter'
-    args = {
-        'a':inp.select('Select filter:', 
-            {'box':inp.option('Boxcar (rectangular)'),
-            'sine':inp.option('Sine-bell'),
-            'sine2':inp.option('Squared sine-bell'),
-            'gauss':inp.option('Squared Gaussian'),}
-        ),
-        'w':inp.num('Filter length', 16, unit='Points'),
-    }
+# class SolventFilter(JSCommand):
+#     menu_path = ['Processing', 'Solvent Filter']
+#     fun = staticmethod(SOL)
+#     nd = [1,2]
+#     title = 'Solvent filter'
+#     args = {
+#         'a':inp.select('Select filter:',
+#             {'box':inp.option('Boxcar (rectangular)'),
+#             'sine':inp.option('Sine-bell'),
+#             'sine2':inp.option('Squared sine-bell'),
+#             'gauss':inp.option('Squared Gaussian'),}
+#         ),
+#         'w':inp.num('Filter length', 16, unit='Points'),
+#     }
