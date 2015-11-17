@@ -3,6 +3,19 @@ from .NMRSpectrum import NMRSpectrum, NMRDataset
 import numpy.testing as ts
 import nmrglue as ng
 
+class SpectrumTest(unittest.TestCase):
+    def setUp(self):
+        spec1d = NMRSpectrum.fromFile('./test_files/Bruker_1D/', 'Bruker')
+        self.spec1d = spec1d
+        self.fid_file = './test_files/bmse000281_hsqc.fid'
+
+    def test_unitconversion(self):
+        '''Testing unit conversion in NMRSpectrum'''
+        wrong = ['aa', '-.1p']
+        right = ['0.1', '.1ppm', '-1000ms', '-.1HZ']
+        # TODO: complete testing. 2D cases. step cases
+        
+    
 class DatasetTest(unittest.TestCase):
     def setUp(self):
         spec1d = NMRSpectrum.fromFile('./test_files/Bruker_1D/', 'Bruker')

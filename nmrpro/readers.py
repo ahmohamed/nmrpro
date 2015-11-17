@@ -30,13 +30,13 @@ def fromBruker(file, remove_filter=True, read_pdata=True):
         pdata_file = find_pdata(file, data.ndim)
         
         if(pdata_file is not None):
-            data = bruker.read_pdata(pdata_file)[1]
+            procs, data = bruker.read_pdata(pdata_file)
         else: read_pdata = False
     
     if remove_filter and not read_pdata:
         data = bruker.remove_digital_filter(dic, data, True)
-
-    u = bruker.guess_udic(dic, data)
+    
+    u = bruker.guess_udic(dic, data)    
     u["original_format"] = 'Bruker'
     u["Name"] = str(file)
     if(read_pdata):
@@ -45,7 +45,13 @@ def fromBruker(file, remove_filter=True, read_pdata=True):
             u[i]['freq'] = True
     
     uc  = [uc_from_udic(u, dim) for dim in range(0, data.ndim)]
-
+    
+    if read_pdata and 'procs' in procs.keys():
+        proc_names = ['procs', 'proc2s']
+        for i, uc_i in enumerate(uc[::-1]):
+            if procs[proc_names[i] ] and procs[proc_names[i] ]['OFFSET']:
+                uc_i._first = procs[proc_names[i] ]['OFFSET']
+    
     return NMRSpectrum(data, udic=u, uc=uc)
 
 def fromPipe(file):

@@ -17,6 +17,39 @@ def ndarray_subclasser(f):
     newf.__name__ = f.__name__
     return newf
 
+def workflow_manager(f):
+    @wraps(f)
+    def newf(input_, *args, **kwargs):
+        if _islocked('workflow_lock', input_): return f(input_, *args, **kwargs)
+        
+        _lock('workflow_lock', input_)
+        ret = f(input_, *args, **kwargs)
+        _unlock('workflow_lock', input_, ret)
+        
+        if not isinstance(input_, NMRSpectrum):
+            return ret # if the input is a DataUdic, no workflow info is kept
+        
+        # If the function returned the processed spectrum, 
+        # write the original function and arguments in the history.
+        if isinstance(ret, NMRSpectrum):
+            if ret.history != input_.history and len(ret.history.keys()) > 1:
+                # The function modified the history itself.
+                # history.keys() > 1 means it contains at least one operation other than 'original'
+                return ret # we trust the function.
+            
+            # By now, ret.history contains either the inputs history
+            # or just the 'original' operation
+            ret.history = spec.history
+            step = WorkflowStep(f, *args[1:], **kwargs)
+            ret.history[step.operation_name] = step
+            return ret
+        
+        if isinstance(ret, WorkflowStep):
+            step = ret
+            step._original_args = tuple(f, *args[1:], **kwargs)
+            ret = input_.applyStep(step)
+            return ret
+
 def both_dimensions(f, tp='auto'):
     '''Function decorator: applies the function to both dimemsions
     of a 2D NMR spectrum.
@@ -67,16 +100,17 @@ def both_dimensions(f, tp='auto'):
         # other other ones, or in recursion.
         # In this case, the 'both_dimension' effect is kept only on the outer level.
         ###print(f.__module__, f.__name__, s.udic.get('no_transpose', False))
-        if s.udic.get('no_transpose', False): return f(s, *args, **kwargs)
+        if _islocked('no_transpose', s): return f(s, *args, **kwargs)
         
         if 'apply_to_dim' in kwargs:
             apply_to_dim = kwargs['apply_to_dim']
             del kwargs['apply_to_dim']
         else: apply_to_dim = range(0, s.udic['ndim'])
         
-        s.udic['no_transpose'] = True
+        
         Fn_args, Fn_kwargs = parseFnArgs(s.udic['ndim'], args, kwargs)
         
+        _lock('no_transpose', s)
         ret = s
         #ret = f(s, *Fn_args[0], **Fn_kwargs[0]).tp(flag=tp, copy=False)
         for i in range(s.udic['ndim'] -1, -1, -1): # loop over dims in reverse order.
@@ -84,8 +118,7 @@ def both_dimensions(f, tp='auto'):
                 ret = f(ret, *Fn_args[i], **Fn_kwargs[i])
             ret = ret.tp(flag=tp, copy=False)
         
-        s.udic['no_transpose'] = False    
-        ret.udic['no_transpose'] = False
+        _unlock('no_transpose', s, ret)
         return ret
 
     return newf
@@ -133,4 +166,21 @@ def perRow(f):
         else:
             raise ValueError('First argument is not a spectrum.')
     
-    return newf 
+    return newf
+    
+#### Helper functions ###
+def _lock(lock_name, *specs):
+    for s in specs:
+        if hasattr(s, 'udic'):
+            s.udic[lock_name] = True
+
+def _unlock(lock_name, *specs):
+    for s in specs:
+        if hasattr(s, 'udic') and s.udic.has_key(lock_name):
+            del s.udic[lock_name]
+
+def _islocked(lock_name, s):
+    if hasattr(s, 'udic') and s.udic.has_key(lock_name):
+        return s.udic[lock_name]
+    
+    return False

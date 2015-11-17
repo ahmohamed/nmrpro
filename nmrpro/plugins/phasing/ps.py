@@ -10,9 +10,6 @@ from scipy.stats import gmean
 
 __all__ = ['ps', 'autops']
 
-def str2bool(v):
-  return v.lower() in ("yes", "true", "t", "1")
-
 
 ######## Objective functions ##########
 # nD compatible
@@ -98,6 +95,8 @@ def atan_ps0(data):
     return phase0,0
 
 # TODO: fix implementation of angle1
+# Nothing wrong with the implementation?, however the method is not stable.
+# See if we need to supply fft or not. di or not.
 def atan_ps(data):
     left=300
     right=350

@@ -139,8 +139,7 @@ class NMRSpectrum(DataUdic):
         start = self._convert_unit(s.start)
         stop = self._convert_unit(s.stop)
         if isinstance(s.step, basestring):
-            step_unit = num_unit(s.step)[1]
-            step = self._convert_unit(s.step) - self._convert_unit('0'+step_unit)
+            step = self.interval(s.step)
         else : step = s.step
     
         return slice(start, stop, step)
@@ -152,9 +151,16 @@ class NMRSpectrum(DataUdic):
         if isinstance(idx, basestring):
             #TODO: testing on 2D dimensions, negative indices, very small steps
             # testing if/when uc should be updated, esp. in states encoding.
-            return self.uc[dim].i(*num_unit(idx))
+            number, unit = num_unit(idx)
+            try: return self.uc[dim].i(number, unit)
+            except ValueError: 
+                raise ValueError('Incompatible unit %s. Possible units: ppm, ms, hz' %unit)
         else:
             return idx
+    
+    def interval(self, step):
+        step_unit = num_unit(step)[1]
+        return self._convert_unit(step) - self._convert_unit('0'+step_unit)
     
     ################# Data processing  #####################
     def setData(self, input_array):

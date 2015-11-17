@@ -1,4 +1,5 @@
 from nmrglue.fileio.fileiobase import unit_conversion
+import inspect
 
 def str2bool(v):
   return v.lower() in ("yes", "true", "t", "1")
@@ -8,10 +9,22 @@ def num_unit(s):
     for i,c in enumerate(s+' '):
         if c not in numeric:
             break
-    number = float(s[:i])
-    unit = s[i:].lstrip()
+    try:
+        number = float(s[:i])
+        unit = s[i:].lstrip()
+    except ValueError:
+        raise ValueError('Incorrect number-unit format %s. Examples: 1ppm, 10hz, 5ms' %s)
     return number, unit    
-    
+
+
+def get_package_name(func):
+    full_name = inspect.getmodule(func).__package__
+    return full_name.split('.')[-1]
+
+def import_from(module, name):
+    module = __import__(module, fromlist=[name])
+    return getattr(module, name)
+
 def make_uc_pipe(dic, data, dim=-1):
     if dim == -1:
         dim = data.ndim - 1     # last dimention
