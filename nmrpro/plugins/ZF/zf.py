@@ -36,10 +36,10 @@ def ZF(nmrSpec, args):
     if out in (NEWSPEC, NEWSLIDE):
         return fn(nmrSpec)
     elif out == OVERWRITE:
-        if "ZF" in nmrSpec.history.keys():
+        if "ZF" in nmrSpec.history._stepnames:
             return nmrSpec.fapplyAt(fn, "ZF", "ZF")
         
-        elif "FFT" not in nmrSpec.history.keys():
+        elif "FFT" not in nmrSpec.history._stepnames:
             return nmrSpec.fapply(fn, "ZF")
         else:
             return nmrSpec.fapplyBefore(fn, "ZF", "FFT")

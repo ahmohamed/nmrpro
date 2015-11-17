@@ -130,7 +130,7 @@ def perSpectrum(f):
         if not isinstance(new_args[0], DataUdic):
             raise TypeError('First argument is not a spectrum (DataUdic object)')
         
-        
+        # TODO: workflow manager
         ret = f(*new_args, **kwargs)
         if isinstance(ret, NMRSpectrum) and hasattr(new_args[0], "__s_id__"):
             ret.__s_id__ = new_args[0].__s_id__

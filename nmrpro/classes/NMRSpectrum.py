@@ -3,6 +3,7 @@ from nmrglue.process.proc_base import ifft, fft, tp_hyper, c2ri
 from nmrglue.fileio.fileiobase import unit_conversion
 from collections import OrderedDict
 from ..utils import num_unit
+from ..workflows import Workflow, WorkflowStep
 from copy import deepcopy
 
 class DataUdic(np.ndarray):
@@ -94,8 +95,7 @@ class NMRSpectrum(DataUdic):
 
         
         if parent is None:
-            history = OrderedDict()
-            history['original'] = lambda s: s
+            history = Workflow()
             original = DataUdic(input_array, udic)
         else:
             history = parent.history
@@ -129,7 +129,7 @@ class NMRSpectrum(DataUdic):
     
     def __getitem__(self, idx):
         if isinstance(idx, tuple):
-            idx = tuple( self._convert_unit(element, i) for i, element in enumerate(idx) )
+            idx = tuple( self._convert_unit(element, dim) for dim, element in enumerate(idx) )
         else:
             idx = self._convert_unit(idx)
         
@@ -179,48 +179,46 @@ class NMRSpectrum(DataUdic):
         return self
 
     def fapply(self, fun, message):
-        self.history[message] = fun
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        
+        self.history.append(step)
         return self.setData(fun(self))
 
     def fapplyAtIndex(self, fun, message, idx):
-        hist_keys = self.history.keys()
-        hist_keys.insert(idx, message)
-
-        hist_funcs = self.history.values()
-        hist_funcs.insert(idx, fun)
-        self.history = OrderedDict(zip(hist_keys, hist_funcs))
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        
+        self.history.append(step, order=idx)
         return self.update_data()
 
     def fapplyAfter(self, fun, message, element):
-        try:
-            idx = self.history.keys().index(element) + 1
-        except ValueError:
-            return self.fapply(fun, message)
-
-        return self.fapplyAtIndex(fun, message, idx)
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        step.set_order(after=element)
+        self.history.append(step)
+        return self.update_data()
 
     def fapplyBefore(self, fun, message, element):
-        try:
-            idx = self.history.keys().index(element)
-        except ValueError:
-            return self.fapply(fun, message)
-
-        return self.fapplyAtIndex(fun, message, idx)
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        step.set_order(before=element)
+        self.history.append(step)
+        return self.update_data()
 
     def fapplyAt(self, fun, message, element=None):
         if element is None:
             element = message
-        try:
-            idx = self.history.keys().index(element)
-        except ValueError:
-            return self.fapply(fun, message)
 
-        self.history[message] = fun
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        step.set_order(replaces=element)
+        self.history.append(step)
         return self.update_data()
 
     
     def update_data(self):
-        return self.setData(reduce(lambda x, y: y(x), self.history.values(), self.original))
+        return self.history.execute(self)
     
     def getSpectrumAt(self, element, include=False):
         idx = self.history.keys().index(element) + include # if true, include evaluate to 1.

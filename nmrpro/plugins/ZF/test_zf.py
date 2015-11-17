@@ -21,7 +21,7 @@ class zf_1DTest(unittest.TestCase):
         
         ts.assert_array_equal(spec, zf_size(self.data, 2**15), 'Simple Zero filling falied (see zf_size)')
         self.assertEqual(spec.shape[-1], 2**15, 'Spec size is not correct')
-        self.assertEqual(spec.history.has_key("ZF"), True, 'ZF not added to Spec history')
+        self.assertEqual("ZF" in spec.history._stepnames, True, 'ZF not added to Spec history')
         self.assertEqual(spec.udic[0]['size'], 2**15, 'udic size not set correctly')
 
     @unittest.expectedFailure
@@ -31,7 +31,7 @@ class zf_1DTest(unittest.TestCase):
         
         ts.assert_array_equal(spec, zf_size(self.data, 2**15), 'Simple Zero filling falied (see zf_size)')
         self.assertEqual(spec.shape[-1], 2**15, 'Spec size is not correct')
-        self.assertEqual(spec.history.has_key("ZF"), True, 'ZF not added to Spec history')
+        self.assertEqual("ZF" in spec.history._stepnames, True, 'ZF not added to Spec history')
         self.assertEqual(spec.udic[0]['size'], 2**15, 'udic size not set correctly')
         
 
@@ -43,8 +43,8 @@ class zf_1DTest(unittest.TestCase):
         test_data = fft(zf_size(self.data, 2**15))
         ts.assert_array_equal(spec, test_data, 'Simple Zero filling falied (see zf_size)')
         self.assertEqual(spec.shape[-1], 2**15, 'Spec size is not correct')
-        self.assertEqual(spec.history.has_key("ZF"), True, 'ZF not added to Spec history')
-        self.assertEqual(spec.history.keys(), ['original','ZF','FFT'], 'Spec history not in the correct order (See fapplyBefore)')
+        self.assertEqual("ZF" in spec.history._stepnames, True, 'ZF not added to Spec history')
+        self.assertEqual(spec.history._stepnames, ['ZF','FFT'], 'Spec history not in the correct order (See fapplyBefore)')
         self.assertEqual(spec.udic[0]['size'], 2**15, 'udic size not set correctly')
                 
 
@@ -58,7 +58,6 @@ class zf_2DTest(unittest.TestCase):
     def test_zf_pipe(self):
         dic, data = self.dic, self.data
         spec2d = NMRSpectrum.fromPipe(self.filename)
-        
         
         def zf2d_pipe(dic, data, size, size2):
             dic2, data2 = ng.pipe_proc.zf(dic,data, size=size)

@@ -24,7 +24,7 @@ class apod_1DTest(unittest.TestCase):
         spec = webApod(spec, {'em':'True', 'em_lb':'0'})
         
         ts.assert_array_equal(spec, ngp.em(self.data), 'Simple EM apodization failed')
-        self.assertEqual(spec.history.has_key("apod"), True, 'Apodization not added to Spec history')
+        self.assertEqual("apod" in spec.history._stepnames, True, 'Apodization not added to Spec history %s' %str(spec.history._stepnames))
 
     def test_apod_multiple(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
@@ -34,14 +34,14 @@ class apod_1DTest(unittest.TestCase):
         test_data = ngp.gm(test_data)
         
         ts.assert_array_equal(spec, test_data, 'Multiple apodization (EM + GM) failed')
-        self.assertEqual(spec.history.has_key("apod"), True, 'Apodization not added to Spec history')
+        self.assertEqual("apod" in spec.history._stepnames, True, 'Apodization not added to Spec history')
         
     def test_apod_object_overwrite(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
         webApod(spec, {'em':'True', 'em_lb':'0'})
         
         ts.assert_array_equal(spec, ngp.em(self.data), 'Simple EM apodization failed')
-        self.assertEqual(spec.history.has_key("apod"), True, 'Apodization not added to Spec history')
+        self.assertEqual("apod" in spec.history._stepnames, True, 'Apodization not added to Spec history')
 
     def test_apod_with_zf_fft(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
@@ -52,8 +52,8 @@ class apod_1DTest(unittest.TestCase):
         test_data = ngp.fft(ngp.zf_size( ngp.em(self.data) , 2**15))
         ts.assert_array_equal(spec, test_data, 'Apodization with zero filling and FFT failed.')
         self.assertEqual(spec.shape[-1], 2**15, 'Spec size is not correct')
-        self.assertEqual(spec.history.has_key("apod"), True, 'Apodization not added to Spec history')
-        self.assertEqual(spec.history.keys(), ['original','apod','ZF','FFT'], 'Spec history not in the correct order (See fapplyBefore)')
+        self.assertEqual("apod" in spec.history._stepnames, True, 'Apodization not added to Spec history')
+        self.assertEqual(spec.history._stepnames, ['apod','ZF','FFT'], 'Spec history not in the correct order (See fapplyBefore)')
         
     
     ##### Test nmrglue functions using a NMRPipe file ########    

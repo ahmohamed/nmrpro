@@ -160,6 +160,6 @@ def args_to_function(s, args):
 def webApod(nmrSpec, args):
     fn = lambda s:  args_to_function(s, args)
         
-    if "apod" in nmrSpec.history.keys():
+    if "apod" in nmrSpec.history._stepnames:
         return nmrSpec.fapplyAt(fn, "apod", "apod")
-    return nmrSpec.fapplyAfter(fn, "apod", "original")
+    return nmrSpec.fapplyAtIndex(fn, "apod", 'first')
