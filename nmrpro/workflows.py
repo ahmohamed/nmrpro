@@ -1,4 +1,6 @@
-from utils import listIndexOf, indexOf
+from utils import listIndexOf, indexOf, get_package_name
+from copy import deepcopy
+import numpy as np
 
 class WorkflowStep:
     def __init__(self, f, *args, **kwargs):
@@ -27,7 +29,7 @@ class WorkflowStep:
         if hasattr(self._original[0], '_order'):
             return self._original[0]._order
         
-        return 'last'
+        return (None, None, None, False)
     
     @property
     def operation_name(self):
@@ -57,8 +59,9 @@ class Workflow:
         if not isinstance(step, WorkflowStep):
             raise TypeError('Only WorkflowStep objects can be added to a workflow')
         
+        replace = False
         if order == 'auto':
-            order = self._get_order_idx(step)
+            order, replace = self._get_order_idx(step)
         
         
         if order == 'first':
@@ -67,13 +70,14 @@ class Workflow:
             order = len(self._stepnames)
 
         if isinstance(order, int):
-            self._steps.insert(order, step)
-            self._stepnames.insert(order, step.operation_name)
+            if replace:
+                self._steps[order] = step
+                self._stepnames[order] = step.operation_name
+            else:    
+                self._steps.insert(order, step)
+                self._stepnames.insert(order, step.operation_name)
         else:
             raise TypeError('Order must be an int, "first" or "last".')
-        
-        if step.operation_name == 'apod':
-            print ('apod',self._stepnames)
         
     
     def execute(self, s):
@@ -83,25 +87,27 @@ class Workflow:
     def _get_order_idx(self, step):
         step_order = step._order
         stepname = step.operation_name
+        
         if isinstance(step_order, str):
             if step_order == 'first':
-                return 0
+                return 0, False
 
             if step_order == 'last':
-                return len(self._stepnames)
+                return len(self._stepnames), False
         
         before, after, replaces, repeatable = step_order
         
         #Repeatable
         if not repeatable:
             idx = indexOf(stepname, self._stepnames)
-            if idx > -1: return idx
+            print('repeatable', self._stepnames, stepname, idx)
+            if idx > -1: return idx, True
             
         # Replaces
         if replaces is not None:
             idx = listIndexOf(replaces, self._stepnames)
             if len(idx) > 0 and max(idx) > -1:
-                return idx.index(max(idx))
+                return idx.index(max(idx)), True
         
         after_idx = 0
         if after is not None:
@@ -117,4 +123,63 @@ class Workflow:
         if after_idx >  before_idx:
             raise ValueError('Incorrect step order. "before" & "after" are not compatible')
         
-        return after_idx if after_idx > 0 else before_idx
+        return after_idx if after_idx > 0 else before_idx, False
+
+class WFManager:
+    @classmethod
+    def excuteSteps(cls, steps, seed):
+        return reduce(lambda x, y: y(x), steps, seed)
+    
+    @classmethod
+    def computeStep(cls, step, spec):
+        wf = deepcopy(spec.history)
+        all_steps = wf._steps
+        idx, replace = wf._get_order_idx(step)
+        
+        
+        before_idx = after_idx = idx
+        if replace:
+            after_idx += 1
+        
+        last = after_idx == len(all_steps)
+        #before_steps = all_steps[:before_idx]
+        #after_steps = all_steps[:after_idx]
+        
+        print('before, after', before_idx, after_idx)
+        if before_idx == len(all_steps):
+            input_ = spec
+        else:
+            input_ = spec.setData( cls.excuteSteps(all_steps[:before_idx], spec.original) )
+            print(wf._stepnames[:before_idx], type(input_))
+            
+        
+        ret = step(input_)
+        # If the function returned a computed step, execute it.
+        if isinstance(ret, WorkflowStep):
+            step._computed = ret._computed
+            ret = step(input_)
+            
+        # If the function returned the processed spectrum, 
+        # write the original function and arguments in the history.
+        from .classes.NMRSpectrum import NMRSpectrum
+        if isinstance(ret, NMRSpectrum):
+            print('history', ret.history._stepnames, wf._stepnames)
+            if ret.history._stepnames != wf._stepnames and (not ret.history.empty()):
+                # The function modified the history itself.
+                # history contains at least one operation.
+                print('early return')
+                return ret # we trust the function.
+            
+            # By now, ret.history either contains the input_ history or is empty
+            if len(all_steps[after_idx:]) > 0:
+                print('excuting rest')
+                output_ = cls.excuteSteps(all_steps[after_idx:], ret)
+                ret.setData(output_)
+            
+            wf.append(step)
+            ret.history = wf
+            print('manager', wf._stepnames, len(all_steps[after_idx:]))
+            
+        
+        #print('manager_out', wf._stepnames, type(ret))
+        return ret

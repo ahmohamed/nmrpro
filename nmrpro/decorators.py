@@ -1,9 +1,15 @@
 import sys
 from copy import deepcopy
 from classes.NMRSpectrum import NMRSpectrum, NMRDataset, DataUdic
+from .workflows import Workflow, WorkflowStep, WFManager
+from .plugins import JSCommand
+from .libs import decorator
+
 from numpy import array
 import re
 from functools import wraps
+
+
 
 def ndarray_subclasser(f):
     '''Function decorator. Forces functions to return the same ndarray
@@ -17,39 +23,37 @@ def ndarray_subclasser(f):
     newf.__name__ = f.__name__
     return newf
 
+def forder(f, before=None, after=None, replaces=None, repeatable=False):
+    f.__order = (before, after, replaces, repeatable)
+    return f
+
+def jsCommand(path, nd):
+    def decorator(f):
+        args = _parse_interactive_args(f.__interactive, f.__interactive_labels)
+        name = "autogen_" + f.__name__ 
+        _createJSCommand(f, name, path, nd, args)
+        return f      
+    
+    return decorator
+
 def workflow_manager(f):
     @wraps(f)
     def newf(input_, *args, **kwargs):
         if _islocked('workflow_lock', input_): return f(input_, *args, **kwargs)
         
+        if not isinstance(input_, NMRSpectrum):
+            return f(input_, *args, **kwargs) # if the input is a DataUdic, no workflow info is kept
+        
         _lock('workflow_lock', input_)
-        ret = f(input_, *args, **kwargs)
+        step = WorkflowStep(f, *args, **kwargs)
+        ret = WFManager.computeStep(step, input_)
         _unlock('workflow_lock', input_, ret)
         
-        if not isinstance(input_, NMRSpectrum):
-            return ret # if the input is a DataUdic, no workflow info is kept
-        
-        # If the function returned the processed spectrum, 
-        # write the original function and arguments in the history.
-        if isinstance(ret, NMRSpectrum):
-            if ret.history != input_.history and len(ret.history.keys()) > 1:
-                # The function modified the history itself.
-                # history.keys() > 1 means it contains at least one operation other than 'original'
-                return ret # we trust the function.
-            
-            # By now, ret.history contains either the inputs history
-            # or just the 'original' operation
-            ret.history = spec.history
-            step = WorkflowStep(f, *args[1:], **kwargs)
-            ret.history[step.operation_name] = step
-            return ret
-        
-        if isinstance(ret, WorkflowStep):
-            step = ret
-            step._original_args = tuple(f, *args[1:], **kwargs)
-            ret = input_.applyStep(step)
-            return ret
+        return ret
+    
+    return newf
 
+@decorator.decorator
 def both_dimensions(f, tp='auto'):
     '''Function decorator: applies the function to both dimemsions
     of a 2D NMR spectrum.
@@ -125,13 +129,15 @@ def both_dimensions(f, tp='auto'):
     
 
 #TODO: write test with and without additional arguments (*args, **kwargs).
+@decorator.decorator
 def perSpectrum(f):
     def proc_spec(*new_args, **kwargs):
         if not isinstance(new_args[0], DataUdic):
             raise TypeError('First argument is not a spectrum (DataUdic object)')
         
         # TODO: workflow manager
-        ret = f(*new_args, **kwargs)
+        #print ('proc_spec', f, new_args[1:])
+        ret = workflow_manager(f)(*new_args, **kwargs)
         if isinstance(ret, NMRSpectrum) and hasattr(new_args[0], "__s_id__"):
             ret.__s_id__ = new_args[0].__s_id__
         return ret
@@ -155,6 +161,7 @@ def perSpectrum(f):
 
     return newf
 
+@decorator.decorator
 def perRow(f):
     @wraps(f)
     def newf(*args, **kwargs):
@@ -184,3 +191,8 @@ def _islocked(lock_name, s):
         return s.udic[lock_name]
     
     return False
+
+def _createJSCommand(f, name, path, nd, args):
+    def newf(s, args):
+        return f(s, **args)
+    type(name, (JSCommand,), {'path':path, 'nd':nd, 'args':args, 'fun':staticmethod(newf)})
