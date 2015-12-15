@@ -4,7 +4,6 @@ from ..JSinput2 import Include
 from warnings import warn
 import nmrglue.process.proc_base as p
 import numpy as np
-import traceback
 
 __all__ = ['fft', 'fft_positive', 'fft_norm', 'fft1d']
 
@@ -20,12 +19,6 @@ def fft(s):
 @perSpectrum
 @both_dimensions
 def fft_positive(s):
-    
-    if isinstance(s, NMRSpectrum):
-        
-    else:
-        
-    #traceback.print_stack(limit=4)
     ret = ndarray_subclasser( p.fft_positive )(s)
     _update_udic(ret)
     return ret
