@@ -11,7 +11,7 @@ from functools import wraps as wrp
 import inspect
 import ipynb as nb
 
-__all__ = ['perSpectrum', 'perRow', 'both_dimensions', 'jsCommand', 'forder', 'interaction', 'ndarray_subclasser']
+__all__ = ['perSpectrum', 'perRow', 'perDimension', 'jsCommand', 'forder', 'interaction', 'ndarray_subclasser']
 
 def wraps(f):
     if not hasattr(f, '__argspec'):
@@ -84,7 +84,7 @@ def forder(before=None, after=None, replaces=None, repeatable=False):
     
     return decorator
 
-def both_dimensions(f, tp='auto'):
+def perDimension(f, tp='auto'):
     '''Function decorator: applies the function to both dimemsions
     of a 2D NMR spectrum.
 
@@ -130,7 +130,7 @@ def both_dimensions(f, tp='auto'):
     @wraps(f)
     def newf(s, *args, **kwargs):
         # The purpose of no_transpose flag is to prevent nested decoration 
-        # of both_dimensions. This may be the case when decorated functions call
+        # of perDimension. This may be the case when decorated functions call
         # other decorated ones, or in recursion.
         # In this case, the 'both_dimension' effect is kept only on the outer level.
         ###

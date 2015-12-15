@@ -141,7 +141,7 @@ def atan(data, p0only):
 
 @jsCommand(['Processing', 'Phase Correction', 'Manual phase correction'], [1,2])
 @perSpectrum
-@both_dimensions
+@perDimension
 def ps(spec, p0=0, p1=0):
     dim = spec.udic['ndim']-1
     if spec.udic[dim]['time']:
@@ -151,7 +151,7 @@ def ps(spec, p0=0, p1=0):
     corrected.udic[dim]['phc'] = (p0, p1)
     return corrected
 
-@both_dimensions
+@perDimension
 def _optimize_phase(spec, objfn, p0only):
     if objfn is None: #atan
         phc = atan(spec, p0only)

@@ -1,5 +1,5 @@
 from ...classes.NMRSpectrum import NMRSpectrum, DataUdic
-from ...decorators import ndarray_subclasser, both_dimensions, perSpectrum, jsCommand, interaction
+from ...decorators import ndarray_subclasser, perDimension, perSpectrum, jsCommand, interaction
 from ..JSinput2 import Include
 from warnings import warn
 import nmrglue.process.proc_base as p
@@ -9,7 +9,7 @@ __all__ = ['fft', 'fft_positive', 'fft_norm', 'fft1d']
 
 
 @perSpectrum
-@both_dimensions
+@perDimension
 def fft(s):
     ret =  ndarray_subclasser( p.fft )(s)
     _update_udic(ret)
@@ -17,14 +17,14 @@ def fft(s):
 
 
 @perSpectrum
-@both_dimensions
+@perDimension
 def fft_positive(s):
     ret = ndarray_subclasser( p.fft_positive )(s)
     _update_udic(ret)
     return ret
 
 @perSpectrum
-@both_dimensions
+@perDimension
 def fft_norm(s):
     ret = ndarray_subclasser( p.fft_norm )(s)
     _update_udic(ret)
@@ -36,7 +36,7 @@ def fft_norm(s):
     arglabels={'method':'FFT method'}
 )
 @perSpectrum
-@both_dimensions
+@perDimension
 def fft1d(s, method='pos'):
     if not _has_time_domain(s):
         warn('Input spectrum is in the frequency domain. No FFT is performed.')
