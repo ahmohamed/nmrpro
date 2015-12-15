@@ -1,10 +1,52 @@
 import sys
 from copy import deepcopy
 from classes.NMRSpectrum import NMRSpectrum, NMRDataset, DataUdic
+from .workflows import Workflow, WorkflowStep, WFManager
+from .plugins import JSCommand
+from .plugins.JSinput2 import _parse_interactive_func, Input, ArgsPanel
+
 from numpy import array
 import re
-from functools import wraps
+from functools import wraps as wrp
+import inspect
+import ipynb as nb
 
+__all__ = ['perSpectrum', 'perRow', 'both_dimensions', 'jsCommand', 'forder', 'interaction', 'ndarray_subclasser']
+
+def wraps(f):
+    if not hasattr(f, '__argspec'):
+        f.__argspec = inspect.getargspec(f)
+    return wrp(f)
+
+def jsCommand(path, nd, args='auto'):
+    def decorator(f):
+        classname = "autogen_" + f.__name__ 
+        
+        if args == 'auto':
+            _args = _parse_interactive_func(f)
+            _createJSCommand(f, classname, path, nd, _args)
+        else:
+            if isinstance(args, ArgsPanel):
+                args.f = f
+                _args = args.get_panel()
+            else:
+                _args = args
+                
+            _createJSCommand(f, classname, path, nd, _args)
+        return f
+    
+    return decorator
+
+#FIXME: This is broken after migration to Input classes
+def interaction(**kwargs):
+    def decorator(f):
+        f.__interactive_labels = kwargs.pop('arglabels', {})
+        f.__interactive = kwargs
+        if nb._is_interactive:
+            f.interactive = nb.interactive_spec(f, **kwargs)
+        return f
+    return decorator
+    
 def ndarray_subclasser(f):
     '''Function decorator. Forces functions to return the same ndarray
     subclass as its arguemets
@@ -20,35 +62,27 @@ def ndarray_subclasser(f):
 def workflow_manager(f):
     @wraps(f)
     def newf(input_, *args, **kwargs):
-        if _islocked('workflow_lock', input_): return f(input_, *args, **kwargs)
-        
-        _lock('workflow_lock', input_)
-        ret = f(input_, *args, **kwargs)
-        _unlock('workflow_lock', input_, ret)
+        if _islocked('workflow_lock', input_):# or _islocked('no_transpose', input_): #FIXME: This is a serious bug!!
+            return f(input_, *args, **kwargs)
         
         if not isinstance(input_, NMRSpectrum):
-            return ret # if the input is a DataUdic, no workflow info is kept
+            return f(input_, *args, **kwargs) # if the input is a DataUdic, no workflow info is kept
         
-        # If the function returned the processed spectrum, 
-        # write the original function and arguments in the history.
-        if isinstance(ret, NMRSpectrum):
-            if ret.history != input_.history and len(ret.history.keys()) > 1:
-                # The function modified the history itself.
-                # history.keys() > 1 means it contains at least one operation other than 'original'
-                return ret # we trust the function.
-            
-            # By now, ret.history contains either the inputs history
-            # or just the 'original' operation
-            ret.history = spec.history
-            step = WorkflowStep(f, *args[1:], **kwargs)
-            ret.history[step.operation_name] = step
-            return ret
+        _lock('workflow_lock', input_)
+        step = WorkflowStep(f, *args, **kwargs)
+        ret = WFManager.computeStep(step, input_)
+        _unlock('workflow_lock', input_, ret)
         
-        if isinstance(ret, WorkflowStep):
-            step = ret
-            step._original_args = tuple(f, *args[1:], **kwargs)
-            ret = input_.applyStep(step)
-            return ret
+        return ret
+    
+    return newf
+
+def forder(before=None, after=None, replaces=None, repeatable=False):
+    def decorator(f):
+        f._order = (before, after, replaces, repeatable)
+        return f
+    
+    return decorator
 
 def both_dimensions(f, tp='auto'):
     '''Function decorator: applies the function to both dimemsions
@@ -97,10 +131,14 @@ def both_dimensions(f, tp='auto'):
     def newf(s, *args, **kwargs):
         # The purpose of no_transpose flag is to prevent nested decoration 
         # of both_dimensions. This may be the case when decorated functions call
-        # other other ones, or in recursion.
+        # other decorated ones, or in recursion.
         # In this case, the 'both_dimension' effect is kept only on the outer level.
         ###print(f.__module__, f.__name__, s.udic.get('no_transpose', False))
-        if _islocked('no_transpose', s): return f(s, *args, **kwargs)
+        Fn_args, Fn_kwargs = parseFnArgs(s.udic['ndim'], args, kwargs)
+        
+        if s.udic['ndim'] < 2 or _islocked('no_transpose', s):
+            return f(s, *Fn_args[0], **Fn_kwargs[0])
+        
         
         if 'apply_to_dim' in kwargs:
             apply_to_dim = kwargs['apply_to_dim']
@@ -108,15 +146,16 @@ def both_dimensions(f, tp='auto'):
         else: apply_to_dim = range(0, s.udic['ndim'])
         
         
-        Fn_args, Fn_kwargs = parseFnArgs(s.udic['ndim'], args, kwargs)
-        
         _lock('no_transpose', s)
         ret = s
         #ret = f(s, *Fn_args[0], **Fn_kwargs[0]).tp(flag=tp, copy=False)
         for i in range(s.udic['ndim'] -1, -1, -1): # loop over dims in reverse order.
             if i in apply_to_dim:
                 ret = f(ret, *Fn_args[i], **Fn_kwargs[i])
+            
+            print('b4tp dim'+str(i), type(ret))
             ret = ret.tp(flag=tp, copy=False)
+            print('aftertp dim'+str(i), type(ret))
         
         _unlock('no_transpose', s, ret)
         return ret
@@ -130,15 +169,16 @@ def perSpectrum(f):
         if not isinstance(new_args[0], DataUdic):
             raise TypeError('First argument is not a spectrum (DataUdic object)')
         
-        
-        ret = f(*new_args, **kwargs)
+        # TODO: workflow manager
+        #print ('proc_spec', f, new_args[1:])
+        ret = workflow_manager(f)(*new_args, **kwargs)
         if isinstance(ret, NMRSpectrum) and hasattr(new_args[0], "__s_id__"):
             ret.__s_id__ = new_args[0].__s_id__
         return ret
     
     def proc_speclist(*args, **kwargs):
         speclist = args[0]
-        return [proc_spec(*((s,)+args[1:]), **kwargs) for s in speclist]
+        return [proc_spec(s, *args[1:], **kwargs) for s in speclist]
      
     @wraps(f)
     def newf(*args, **kwargs):
@@ -171,16 +211,30 @@ def perRow(f):
 #### Helper functions ###
 def _lock(lock_name, *specs):
     for s in specs:
-        if hasattr(s, 'udic'):
-            s.udic[lock_name] = True
+        if hasattr(s, 'spec_flags'):
+            s.spec_flags[lock_name] = True
 
 def _unlock(lock_name, *specs):
     for s in specs:
-        if hasattr(s, 'udic') and s.udic.has_key(lock_name):
-            del s.udic[lock_name]
+        if hasattr(s, 'spec_flags') and s.spec_flags.has_key(lock_name):
+            del s.spec_flags[lock_name]
 
 def _islocked(lock_name, s):
-    if hasattr(s, 'udic') and s.udic.has_key(lock_name):
-        return s.udic[lock_name]
+    if hasattr(s, 'spec_flags') and s.spec_flags.has_key(lock_name):
+        return s.spec_flags[lock_name]
     
     return False
+
+def _createJSCommand(f, name, path, nd, panel):
+    @wraps(f)
+    def newf(s, _args):
+        if isinstance(panel, Input):
+            _args = panel.calculate(_args)
+        
+        return f(s, **_args)
+    
+    if isinstance(panel, Input):
+        args = panel.to_dict()
+    else:
+        args = panel
+    type(name, (JSCommand,), {'menu_path':path, 'nd':nd, 'args':args, 'fun':staticmethod(newf)})

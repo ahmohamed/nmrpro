@@ -3,6 +3,7 @@ from nmrglue.process.proc_base import ifft, fft, tp_hyper, c2ri
 from nmrglue.fileio.fileiobase import unit_conversion
 from collections import OrderedDict
 from ..utils import num_unit
+from ..workflows import Workflow, WorkflowStep
 from copy import deepcopy
 
 class DataUdic(np.ndarray):
@@ -42,14 +43,18 @@ class DataUdic(np.ndarray):
         udic[0] = udic[1]
         udic[1] = temp
         
-        if copy or (self.nbytes != data.nbytes) or (self.shape != data.shape):
-            return DataUdic(data, udic)
+        if copy or (self.nbytes != data.nbytes):#TODO: or (self.shape != data.shape):
+            return DataUdic(data, udic) #TODO: return same subclass
         
         if flag == 'nohyper':
             self = self.transpose()
         else:
-            self.shape = data.shape
-            self.data = data
+            try:
+                self.data = data.data
+                self.dtype = data.dtype
+                self.shape = data.shape
+            except AttributeError:
+                return DataUdic(data, udic)
         self.udic = udic
         
         # TODO: update udic[size]. add 'transposed' to udic?
@@ -94,12 +99,13 @@ class NMRSpectrum(DataUdic):
 
         
         if parent is None:
-            history = OrderedDict()
-            history['original'] = lambda s: s
+            history = Workflow()
             original = DataUdic(input_array, udic)
+            flags = {}
         else:
             history = parent.history
             original = parent.original
+            flags = parent.spec_flags
             if uc is None: uc = parent.uc
         
         # add the new attribute to the created instance
@@ -116,6 +122,7 @@ class NMRSpectrum(DataUdic):
         obj.uc = uc
         obj.history = history
         obj.original = original
+        obj.spec_flags = flags
         return obj
 
     def __array_finalize__(self, obj):
@@ -125,11 +132,12 @@ class NMRSpectrum(DataUdic):
         self.uc = getattr(obj, 'uc', None)
         self.history = getattr(obj, 'history', None)
         self.original = getattr(obj, 'original', None)
+        self.spec_flags = getattr(obj, 'spec_flags', {})
 
-    
+    ################# Slicing with units  #####################
     def __getitem__(self, idx):
         if isinstance(idx, tuple):
-            idx = tuple( self._convert_unit(element, i) for i, element in enumerate(idx) )
+            idx = tuple( self._convert_unit(element, dim) for dim, element in enumerate(idx) )
         else:
             idx = self._convert_unit(idx)
         
@@ -163,64 +171,71 @@ class NMRSpectrum(DataUdic):
         return self._convert_unit(step) - self._convert_unit('0'+step_unit)
     
     ################# Data processing  #####################
+    def tp(self, copy=True, flag='auto'):
+        _ret = super(NMRSpectrum, self).tp(copy, flag)
+        if isinstance(_ret, DataUdic):
+            return NMRSpectrum(_ret, _ret.udic, self)
+        
+        return _ret
+    
     def setData(self, input_array):
         if hasattr(input_array, 'udic'):
             udic = input_array.udic
         else:
             udic = self.udic
             
-        if self.nbytes != input_array.nbytes or self.shape != input_array.shape:
+        if self.nbytes != input_array.nbytes:# TODO: or self.shape != input_array.shape:
             return NMRSpectrum(input_array, udic, self)
-
+        
+        
         self.data = input_array.data
         self.dtype = input_array.dtype
+        self.shape = input_array.shape
         self.udic = udic
 
         return self
 
     def fapply(self, fun, message):
-        self.history[message] = fun
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        
+        self.history.append(step)
         return self.setData(fun(self))
 
     def fapplyAtIndex(self, fun, message, idx):
-        hist_keys = self.history.keys()
-        hist_keys.insert(idx, message)
-
-        hist_funcs = self.history.values()
-        hist_funcs.insert(idx, fun)
-        self.history = OrderedDict(zip(hist_keys, hist_funcs))
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        
+        self.history.append(step, order=idx)
         return self.update_data()
 
     def fapplyAfter(self, fun, message, element):
-        try:
-            idx = self.history.keys().index(element) + 1
-        except ValueError:
-            return self.fapply(fun, message)
-
-        return self.fapplyAtIndex(fun, message, idx)
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        step.set_order(after=element)
+        self.history.append(step)
+        return self.update_data()
 
     def fapplyBefore(self, fun, message, element):
-        try:
-            idx = self.history.keys().index(element)
-        except ValueError:
-            return self.fapply(fun, message)
-
-        return self.fapplyAtIndex(fun, message, idx)
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        step.set_order(before=element)
+        self.history.append(step)
+        return self.update_data()
 
     def fapplyAt(self, fun, message, element=None):
         if element is None:
             element = message
-        try:
-            idx = self.history.keys().index(element)
-        except ValueError:
-            return self.fapply(fun, message)
 
-        self.history[message] = fun
+        step = WorkflowStep(fun)
+        step.operation_name = message
+        step.set_order(replaces=element)
+        self.history.append(step)
         return self.update_data()
 
     
     def update_data(self):
-        return self.setData(reduce(lambda x, y: y(x), self.history.values(), self.original))
+        return self.history.execute(self)
     
     def getSpectrumAt(self, element, include=False):
         idx = self.history.keys().index(element) + include # if true, include evaluate to 1.

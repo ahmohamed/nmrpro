@@ -1,5 +1,8 @@
 from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
-from ...decorators import both_dimensions, perSpectrum
+from ...decorators import *
+from ...exceptions import NMRShapeError, DomainError
+from ..JSinput2 import Include
+
 import numpy as np
 from ...utils import str2bool
 
@@ -7,6 +10,7 @@ from ...utils import str2bool
 # These functions return the apodization function, instead of the corrected data.
 
 pi = np.pi
+
 
 def EM(spec, lb=0.2):
     n = spec.shape[-1]
@@ -26,7 +30,7 @@ def GM(spec, g1=0.0, g2=0.0, g3=0.0):
     g = 0.6 * pi * (g2/sw) * (g3 * (n - 1) - np.arange(n))
     return np.exp(e - g * g)
 
-def GMB(spec, lb=0.0, gb=0.0):
+def GMB(spec, lb=0.0, gb=0.25):
     n = spec.shape[-1]
     sw = spec.udic[spec.ndim-1]['sw']
     
@@ -60,10 +64,10 @@ def TM(spec, t1=0.0, t2=0.0):
     t1, t2 = float(t1), float(t2)
     return np.concatenate((np.linspace(0, 1, t1), np.ones(n - t1 - t2), np.linspace(1, 0, t2)))
 
-def TRI(spec, loc='auto', lHi=0.0, rHi=0.0): 
+def TRI(spec, loc=-1, lHi=0.0, rHi=0.0): 
     n = spec.shape[-1]
-    if(loc == 'auto'):
-        loc = float(n/2)
+    if loc == -1:
+        loc = float(n)/2
         
     loc, lHi, rHi = float(loc), float(lHi), float(rHi) 
     return np.concatenate((np.linspace(lHi, 1., loc), np.linspace(1., rHi, n - loc + 1)[1:]))
@@ -106,60 +110,44 @@ def trafincate(a, n):
 
 
 
-@both_dimensions
-def args_to_function(s, args):
-    def getQueryParams(prefix, query, separator = '_'):
-        prefix = prefix + separator
-        start=len(prefix)
-        params = {k[start:]:v for (k,v) in query.items() if k.startswith(prefix)}
-        return params
-        
-    def accumulate_apod_function(spec, flist, query):
-        accumulative = np.ones(spec.shape[-1])
-        for k in flist.keys():
-            fun = flist[k](spec, **getQueryParams(k, query))
-            accumulative *= fun
-    
-        return accumulative.astype(spec.dtype)
-          
-    f = {
-        'em': EM,
-        'sb': sineBell,
-        'sb2': sineBellSq,
-        'gm': GM,
-        'gmb': GMB,
-        'jmod': JMOD,
-        'sp': SP,
-        'tm': TM,
-        'tri': TRI,
-        'gauss': gauss,
-        'sgauss': shiftedGauss,
-        #TODO: Add the rest of functions
-    }
-    
-    filtered_f = { k:f[k] for k in f.keys() if str2bool(args.get(k, "False")) }
-    
-    inv = str2bool(args.get('inv', "False"))
-    c = float(args.get('c', "1.0"))
-    apod = accumulate_apod_function(s, filtered_f, args)
 
-    if inv:
-        apod = 1 / apod
-    
-    apoded = apod * s
-    
-    if inv:
-        apoded[..., 0] = apoded[..., 0] / c
-    else:
-        apoded[..., 0] = apoded[..., 0] * c
-    
-    return apoded
-    
-
+@jsCommand(['Processing', 'Apodization', 'Advanced apodization'], [1,2])
+@interaction(inv=False, c=1., 
+    em=(True, Include(EM)), gm=(False, Include(GM)), gmb=(False, Include(GMB)), 
+    jmod=(False, Include(JMOD)), sp=(False, Include(SP)), tm=(False, Include(TM)),
+    tri=(False, Include(TRI)) #TODO: argslabels
+)
 @perSpectrum
-def webApod(nmrSpec, args):
-    fn = lambda s:  args_to_function(s, args)
+@both_dimensions
+@forder(before=['FFT', 'ZF'])
+def apod(spec, inv=False, c=1., *windows, **kwwindows):
+    if not spec.udic[spec.ndim-1]['time']:
+        raise DomainError('Cant perform apodization, spectrum is not in time domain')
+    
+    #print('apod original', np.array_equal(spec, spec.original))
+    windows += tuple( [v for v in kwwindows.values() if v] )
+    print(windows)
+    windows = [w(spec) if callable(w) else w for w in windows]
+    n = spec.shape[-1]
+    
+    if not all([w.shape[-1]==n for w in windows]):
+        raise NMRShapeError('Apodization windows must have the same number of data points as the spectrum')
+    
+    total = np.ones(spec.shape[-1], spec.dtype)
+    for w in windows:
+        total *= w
+    
+    #Scale first point
+    total[..., 0] = total[..., 0] * c
+    if inv:
+        total = 1 / total
         
-    if "apod" in nmrSpec.history.keys():
-        return nmrSpec.fapplyAt(fn, "apod", "apod")
-    return nmrSpec.fapplyAfter(fn, "apod", "original")
+    #print('total', total)
+    return spec * total
+    
+
+@jsCommand(['Processing', 'Apodization', 'Expoenential line broadnening (auto)'], [1,2], args=None)
+def _em_apod(s):
+    return apod(s, w=lambda s: EM(s, 0.2))
+
+

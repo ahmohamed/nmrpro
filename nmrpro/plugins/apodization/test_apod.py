@@ -5,9 +5,10 @@ from nmrglue.fileio.bruker import read,guess_udic
 import nmrglue.fileio.pipe as pipe
 from nmrglue.fileio.convert import converter
 from ...classes.NMRSpectrum import NMRSpectrum
-from ..ZF.zf import ZF
-from ..FFT.fft import webFFT
-from .apod import webApod
+from ...exceptions import NMRShapeError
+from ..ZF.zf import zf1d
+from ..FFT.fft import fft1d
+from .apod import *
 import numpy.testing as ts
 
 #TODO: apod_2Dtest
@@ -21,45 +22,55 @@ class apod_1DTest(unittest.TestCase):
     
     def test_apod(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec = webApod(spec, {'em':'True', 'em_lb':'0'})
+        spec = apod(spec, w=lambda s: EM(s, 0.))
         
         ts.assert_array_equal(spec, ngp.em(self.data), 'Simple EM apodization failed')
-        self.assertEqual(spec.history.has_key("apod"), True, 'Apodization not added to Spec history')
+        self.assertEqual("apodization" in spec.history._stepnames, True, 'Apodization not added to Spec history %s' %str(spec.history._stepnames))
 
     def test_apod_multiple(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec = webApod(spec, {'em':'True', 'em_lb':'0', 'gm':'true'})
+        spec = apod(spec, w=lambda s: EM(s, 0.), w2=lambda s: GM(s))
         
         test_data = ngp.em(self.data)
         test_data = ngp.gm(test_data)
         
         ts.assert_array_equal(spec, test_data, 'Multiple apodization (EM + GM) failed')
-        self.assertEqual(spec.history.has_key("apod"), True, 'Apodization not added to Spec history')
+        self.assertEqual("apodization" in spec.history._stepnames, True, 'Apodization not added to Spec history')
         
-    def test_apod_object_overwrite(self):
-        spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        webApod(spec, {'em':'True', 'em_lb':'0'})
-        
-        ts.assert_array_equal(spec, ngp.em(self.data), 'Simple EM apodization failed')
-        self.assertEqual(spec.history.has_key("apod"), True, 'Apodization not added to Spec history')
+    # def test_apod_object_overwrite(self):
+    #     spec = NMRSpectrum.fromBruker(self.filename, False, False)
+    #     webApod(spec, {'em':'True', 'em_lb':'0'})
+    #
+    #     ts.assert_array_equal(spec, ngp.em(self.data), 'Simple EM apodization failed')
+    #     self.assertEqual("apod" in spec.history._stepnames, True, 'Apodization not added to Spec history')
 
     def test_apod_with_zf_fft(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec =webFFT(spec, {'a':'fft'})
-        spec = ZF(spec, {'size':2**15})
-        spec = webApod(spec, {'em':'True', 'em_lb':'0'})
-        
+        spec = fft1d(spec, 'fft')
+        spec = zf1d(spec, size=2**15)
+        spec = apod(spec, w=lambda s: EM(s, 0.))
+
         test_data = ngp.fft(ngp.zf_size( ngp.em(self.data) , 2**15))
-        ts.assert_array_equal(spec, test_data, 'Apodization with zero filling and FFT failed.')
         self.assertEqual(spec.shape[-1], 2**15, 'Spec size is not correct')
-        self.assertEqual(spec.history.has_key("apod"), True, 'Apodization not added to Spec history')
-        self.assertEqual(spec.history.keys(), ['original','apod','ZF','FFT'], 'Spec history not in the correct order (See fapplyBefore)')
+        ts.assert_array_equal(spec, test_data, 'Apodization with zero filling and FFT failed.')
+        self.assertEqual("apodization" in spec.history._stepnames, True, 'Apodization not added to Spec history')
+        self.assertEqual(spec.history._stepnames, ['apodization','ZF','FFT'], 'Spec history not in the correct order (See fapplyBefore)')
+    
+    def test_apod_with_fft(self):
+        spec = NMRSpectrum.fromBruker(self.filename, False, False)
+        spec = fft1d(spec, 'fft')
+        spec = apod(spec, w=lambda s: EM(s, 0.))
         
+        test_data = ngp.fft( ngp.em(self.data) )
+        ts.assert_array_equal(spec, test_data, 'Apodization with zero filling and FFT failed.')
+        self.assertEqual("apodization" in spec.history._stepnames, True, 'Apodization not added to Spec history')
+        self.assertEqual(spec.history._stepnames, ['apodization', 'FFT'], 'Spec history not in the correct order (See fapplyBefore)')
+    
     
     ##### Test nmrglue functions using a NMRPipe file ########    
     def test_apod_em(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec = webApod(spec, {'em':'True', 'em_lb':"0.2"})
+        spec = apod(spec, w=lambda s: EM(s))
         C = converter()
         u = guess_udic(self.dic,self.data)
         C.from_bruker(self.dic, self.data, u)
@@ -71,7 +82,7 @@ class apod_1DTest(unittest.TestCase):
                     
     def test_apod_gm(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec = webApod(spec, {'gm':'True', 'gm_g1':"1", 'gm_g2':"10", 'gm_g3':"5"})
+        spec = apod(spec, w=lambda s: GM(s, 1, 10, 5))
         C = converter()
         u = guess_udic(self.dic,self.data)
         C.from_bruker(self.dic, self.data, u)
@@ -82,7 +93,7 @@ class apod_1DTest(unittest.TestCase):
 
     def test_apod_gmb(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec = webApod(spec, {'gmb':'True', 'gmb_lb':"2", 'gmb_gb':"0.5"})
+        spec = apod(spec, w=lambda s: GMB(s, 2, 0.5))
         C = converter()
         u = guess_udic(self.dic,self.data)
         C.from_bruker(self.dic, self.data, u)
@@ -94,7 +105,7 @@ class apod_1DTest(unittest.TestCase):
         
     def test_apod_jmod(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec = webApod(spec, {'jmod':'True', 'jmod_off':"0.5", 'jmod_j':"5", 'jmod_lb':"1"})
+        spec = apod(spec, w=lambda s: JMOD(s, 0.5, 5, 1))
         C = converter()
         u = guess_udic(self.dic,self.data)
         C.from_bruker(self.dic, self.data, u)
@@ -106,7 +117,7 @@ class apod_1DTest(unittest.TestCase):
         
     def test_apod_sp(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec = webApod(spec, {'sp':'True', 'sp_off':"0.5", 'sp_power':"2"})
+        spec = apod(spec, w=lambda s: SP(s, off=0.5, power=2))
         C = converter()
         u = guess_udic(self.dic,self.data)
         C.from_bruker(self.dic, self.data, u)
@@ -119,11 +130,11 @@ class apod_1DTest(unittest.TestCase):
     def test_apod_tm(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
         # t1 < 1 results in dimension reduction of the apodization vector
-        with self.assertRaises(ValueError):
-            webApod(spec, {'tm':'True', 'tm_t1':"0.5", 'tm_t2':"10000"})
-        
+        with self.assertRaises(NMRShapeError):
+            apod(spec, w=lambda s: TM(s, 0.5, 10000))
+
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec = webApod(spec, {'tm':'True', 'tm_t1':"5000", 'tm_t2':"10000"})
+        spec = apod(spec, w=lambda s: TM(s, 5000, 10000))
         C = converter()
         u = guess_udic(self.dic,self.data)
         C.from_bruker(self.dic, self.data, u)
@@ -133,16 +144,14 @@ class apod_1DTest(unittest.TestCase):
         ts.assert_allclose(spec, test_data, 1e-7,1e-3, 'TM apodization not equal to NMRPipe processed one.')
         
         
-        
-        
     def test_apod_tri(self):
         spec = NMRSpectrum.fromBruker(self.filename, False, False)        
         # Loc < 1 results in dimension reduction of the apodization vector
-        with self.assertRaises(ValueError):
-            webApod(spec, {'tri':'True', 'tri_loc':"0.5", 'tri_lHi':"0.7",'tri_rHi':"0.5" })
+        with self.assertRaises(NMRShapeError):
+            apod(spec, w=lambda s: TRI(s, 0.5, 0.7, 0.5))
         
         spec = NMRSpectrum.fromBruker(self.filename, False, False)
-        spec = webApod(spec, {'tri':'True', 'tri_loc':"5000", 'tri_lHi':"0.7",'tri_rHi':"0.5" })
+        spec = apod(spec, w=lambda s: TRI(s, 5000, 0.7, 0.5))
         C = converter()
         u = guess_udic(self.dic,self.data)
         C.from_bruker(self.dic, self.data, u)
@@ -172,7 +181,7 @@ class apod_2DTest(unittest.TestCase):
         dic3, data3 = pipep.tp(dic3, data3, auto=True)
         
         # test auto class implementation
-        apoded = webApod(spec2d,{'em':'true', 'em_lb':'0.2'})
+        apoded = apod(spec2d, w=lambda s: EM(s))
         ts.assert_equal(data3, apoded, '2D Apodized spectrum doesnt match pipe_proc.em')
     
     def test_apod_unity(self):
@@ -180,7 +189,7 @@ class apod_2DTest(unittest.TestCase):
         spec2d = NMRSpectrum.fromPipe(self.filename)
         
         # test auto class implementation
-        apoded = webApod(spec2d,{})
+        apoded = apod(spec2d)
         ts.assert_equal(data, apoded, '2D Apodization unity failed')
     
     
@@ -191,11 +200,11 @@ class apod_2DTest(unittest.TestCase):
             correctly set and reset.
         '''
         spec2d = NMRSpectrum.fromPipe(self.filename)
-        apoded_2d = webApod(spec2d,{})
-        apoded_ffted_2d = webFFT(apoded_2d,{})
+        apoded_2d = apod(spec2d)
+        apoded_ffted_2d = fft1d(apoded_2d)
     
         spec2d = NMRSpectrum.fromPipe(self.filename)
-        ffted_2d = webFFT(apoded_2d,{})
+        ffted_2d = fft1d(apoded_2d)
         ts.assert_equal(ffted_2d, apoded_ffted_2d, '2D Apodization unity with FFT failed')
     
     
@@ -211,6 +220,5 @@ class apod_2DTest(unittest.TestCase):
         dic3, data3 = pipep.tp(dic3, data3, auto=True)
         
         # test auto class implementation
-        apoded = webApod(spec2d,{'F2_em':'true', 'F2_em_lb':'0.2', 'F1_gm':'True', 
-                                 'F1_gm_g1':"1", 'F1_gm_g2':"0.5", 'F1_gm_g3':"0.5"})
+        apoded = apod(spec2d, F2_w1=lambda s: EM(s, 0.2), F1_w2=lambda s: GM(s, 1, 0.5, 0.5))
         ts.assert_equal(data3, apoded, '2D Apodized spectrum doesnt match pipe_proc.em and gm on F1 and F2')

@@ -2,7 +2,7 @@ from nmrglue.fileio.fileiobase import unit_conversion
 import inspect
 
 def str2bool(v):
-  return v.lower() in ("yes", "true", "t", "1")
+    return v.lower() in ("yes", "true", "t", "1")
 
 def num_unit(s):
     numeric = '0123456789-.'
@@ -24,6 +24,36 @@ def get_package_name(func):
 def import_from(module, name):
     module = __import__(module, fromlist=[name])
     return getattr(module, name)
+
+
+def indexOf(element, ls, method='first'):
+    if method == 'first':
+        try: return ls.index(element)
+        except ValueError: return -1
+    
+    if method == 'last':
+        try: return len(ls) - ls[::-1].index(element) - 1
+        except ValueError: return -1
+    
+    if method == 'all':
+        indices = [i for i, x in enumerate(ls) if x == element]
+        if len(indices) > 0:
+            return indices
+        else: return -1
+    
+    raise ValueError('indexOf: method should be first, last or all')
+    
+def listIndexOf(element_ls, ls, method='first'):
+    if method == 'all':
+        raise ValueError('Method all cannot be used with listIndexOf')
+    
+    if isinstance(element_ls, list):
+        return [indexOf(e, ls) for e in element_ls]
+    else:
+        return [indexOf(element_ls, ls, method)]
+
+
+
 
 def make_uc_pipe(dic, data, dim=-1):
     if dim == -1:

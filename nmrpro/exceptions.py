@@ -21,5 +21,13 @@ class NMRTypeError(SpecError):
     Incorrect number of dimnesions (2D to a function supporting 1D only).
     '''
     
+class NMRShapeError(SpecError):
+    '''
+    Raised when an incorrect shape is provided.
+    
+    Examples include passing apodization window with different shape than the spectrum.
+    '''
+
+
 class ArgumentError(SpecError):
     '''Raised when an incompatible argument is passed to a function.'''

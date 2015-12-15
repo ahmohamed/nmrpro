@@ -1,8 +1,10 @@
+_is_interactive = False
 try:
     _ip = get_ipython()
 except:
     _ip = None
 if _ip and _ip.__module__.lower().startswith('ipy'):
+    _is_interactive = True
     #_ip.user_module._specdraw_version = False
     def initialize_specdraw():
         try:
@@ -68,20 +70,29 @@ if _ip and _ip.__module__.lower().startswith('ipy'):
         d3.select(element[0]).call(spec_app);
         '''))
     
+    
+    def interactive_spec(f, **kwargs):
+        def newf(spectrum):
+            def inter_f(**kwargs):
+                ret = f(spectrum, **kwargs)
+                plotSpectra(ret)
+        
+            return interactive(inter_f, **kwargs)
+        return newf
+    
     def jsTester(panel):
         from nmrpro.plugins import JSCommand
         from IPython.display import display, Javascript, HTML
         import json
         
-        if isinstance(panel, JSCommand):
+        if panel in JSCommand.plugins:
             panel = panel.args
         
         panel = json.dumps(panel)
-        display(Javascript('''
-        <script>'''
-        +"var panel = JSON.parse('"+panel+"');"+
-        '''
+        js = '''
+        ''' + "var panel = JSON.parse('"+panel+"');" + '''
         var inp = specdraw.hooks.input;
-        d3.select(element).append(inp.div(panel));
-        </script>
-        '''))
+        d3.select(element[0]).append(inp.div(panel));
+        '''
+        
+        display(Javascript(js))
