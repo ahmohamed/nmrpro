@@ -118,7 +118,7 @@ def trafincate(a, n):
     tri=(False, Include(TRI)) #TODO: argslabels
 )
 @perSpectrum
-@both_dimensions
+@perDimension
 @forder(before=['FFT', 'ZF'])
 def apod(spec, inv=False, c=1., *windows, **kwwindows):
     if not spec.udic[spec.ndim-1]['time']:
