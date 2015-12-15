@@ -1,9 +1,11 @@
 import nmrglue.process.proc_base as p
 import numpy as np
 from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
-from ...decorators import ndarray_subclasser, perSpectrum, both_dimensions
+from ...decorators import *
+from ...exceptions import DomainError
 from ...utils import str2bool
 from ..FFT.fft import fft_positive
+from ...workflows import WorkflowStep
 
 from scipy.optimize import minimize
 from scipy.stats import gmean
@@ -130,24 +132,43 @@ def atan_ps(data):
     return phase0,phase1
 
 
+
+
 def atan(data, p0only):
     if p0only: return atan_ps0(data)
     return atan_ps(data)
 
 
-
-
-
+@jsCommand(['Processing', 'Phase Correction', 'Manual phase correction'], [1,2])
 @perSpectrum
 @both_dimensions
-def ps(spec, phc):
-    corrected = ndarray_subclasser(p.ps)(spec, *phc)
-    dim = corrected.udic['ndim']-1
-    corrected.udic[dim]['phc'] = phc
+def ps(spec, p0=0, p1=0):
+    dim = spec.udic['ndim']-1
+    if spec.udic[dim]['time']:
+        raise DomainError('Spectrum must be in the time domain for Phase correction.')
+        
+    corrected = ndarray_subclasser(p.ps)(spec, p0, p1)    
+    corrected.udic[dim]['phc'] = (p0, p1)
     return corrected
 
-@perSpectrum
 @both_dimensions
+def _optimize_phase(spec, objfn, p0only):
+    if objfn is None: #atan
+        phc = atan(spec, p0only)
+    else:    
+        opt_function = opt_ps0 if p0only else opt_ps
+        phc = opt_function(spec, objfn)
+    
+    return ps(spec, *phc).di()
+
+@jsCommand(['Processing', 'Phase Correction', 'Automatic phase correction'], [1,2], args=None)
+@jsCommand(['Processing', 'Phase Correction', 'Advanced phase correction'], [1,2])
+@interaction(method={'Entropy minization':'entropy', 'Intrgration maximization':'integ',
+    'Minimum point maximization':'minpoint', 'Peak minima maximization':'peakmin',
+    'Whitening':'whiten', 'Autmatic using arctan':'atan'}, 
+    p0only=False
+)
+@perSpectrum
 def autops(spec, method = 'minpoint', p0only=False):
     objfn = {
         "entropy":min_entropy,
@@ -155,68 +176,16 @@ def autops(spec, method = 'minpoint', p0only=False):
         "minpoint":min_point,
         "peakmin":peak_minima,
         "whiten":whiten,
-        "atan":None        
+        "atan":None  #TODO
     }[method]
     
-    if method is not None: # not atan
-        opt_function = opt_ps0 if p0only else opt_ps
-        phc = opt_function(spec, objfn)
-        return ps(spec, phc).di()
-    
-    # atan
-    phc = atan(spec, p0only)
-    return ps(spec, phc).di()
-
-
-@perSpectrum
-@both_dimensions
-def optimize_phase(spec, opt_function, obj_function, ret='phc'): # FIXME: can we do that?
-    phc = opt_function(spec, obj_function)
-    
-    # is it important that phc caculations on F2 direction be done on F1 corrected?
-    return ps(spec, phc).di()
-    
-
-@both_dimensions
-def phc_from_args(spec, args):
-    alg = args.get('a','opt')
-    if alg == 'opt':
-        opt = {
-            'auto0':opt_ps0,
-            'auto':opt_ps, 
-            'autosim':opt_ps_sim,
-        }[args.get('optfn','autosim')]
-        
-        objfn = {
-            "entropy":min_entropy,
-            "integ":max_integ,
-            "minpoint":min_point,
-            "peakmin":peak_minima,
-            "whiten":whiten
-        }[args.get('objfn','entropy')]
-        
-        return optimize_phase(spec, opt, objfn)
-    
-    if alg == 'atan':
-        phc = atan(spec, str2bool(args.get('p0only', "False")))
-    elif alg == 'man':
-        phc = (float(args.get('p0',0)), float(args.get('p1',0)))
-    
-    return ps(spec, phc)
-
-
-@perSpectrum
-def webPhase(nmrSpec, args):
-    ffted_spec = fft_positive(nmrSpec.original_data())
-    corrected = phc_from_args(ffted_spec, args)
-    
+    ffted_spec = fft_positive(spec.original_data())
+    corrected = _optimize_phase(ffted_spec, objfn, p0only)
     phc = {}
     for i in range(0, corrected.udic['ndim']):
-        phc['F'+ str(i+1)+ '_phc'] = corrected.udic[i]['phc']
+        phc['F'+ str(i+1)+ '_p0'] = corrected.udic[i]['phc'][0]
+        phc['F'+ str(i+1)+ '_p1'] = corrected.udic[i]['phc'][1]
     
-    # print(phc)
-    fn = lambda s: ps(s, **phc)
     
-    if "phase" in nmrSpec.history.keys():
-        return nmrSpec.fapplyAt(fn, "phase", "phase")
-    return nmrSpec.fapplyAfter(fn, "phase", "FFT")
+    return WorkflowStep(ps, **phc)
+    

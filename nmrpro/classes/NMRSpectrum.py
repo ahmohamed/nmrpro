@@ -43,14 +43,18 @@ class DataUdic(np.ndarray):
         udic[0] = udic[1]
         udic[1] = temp
         
-        if copy or (self.nbytes != data.nbytes) or (self.shape != data.shape):
-            return DataUdic(data, udic)
+        if copy or (self.nbytes != data.nbytes):#TODO: or (self.shape != data.shape):
+            return DataUdic(data, udic) #TODO: return same subclass
         
         if flag == 'nohyper':
             self = self.transpose()
         else:
-            self.shape = data.shape
-            self.data = data
+            try:
+                self.data = data.data
+                self.dtype = data.dtype
+                self.shape = data.shape
+            except AttributeError:
+                return DataUdic(data, udic)
         self.udic = udic
         
         # TODO: update udic[size]. add 'transposed' to udic?
@@ -97,9 +101,11 @@ class NMRSpectrum(DataUdic):
         if parent is None:
             history = Workflow()
             original = DataUdic(input_array, udic)
+            flags = {}
         else:
             history = parent.history
             original = parent.original
+            flags = parent.spec_flags
             if uc is None: uc = parent.uc
         
         # add the new attribute to the created instance
@@ -116,6 +122,7 @@ class NMRSpectrum(DataUdic):
         obj.uc = uc
         obj.history = history
         obj.original = original
+        obj.spec_flags = flags
         return obj
 
     def __array_finalize__(self, obj):
@@ -125,8 +132,9 @@ class NMRSpectrum(DataUdic):
         self.uc = getattr(obj, 'uc', None)
         self.history = getattr(obj, 'history', None)
         self.original = getattr(obj, 'original', None)
+        self.spec_flags = getattr(obj, 'spec_flags', {})
 
-    
+    ################# Slicing with units  #####################
     def __getitem__(self, idx):
         if isinstance(idx, tuple):
             idx = tuple( self._convert_unit(element, dim) for dim, element in enumerate(idx) )
@@ -163,17 +171,26 @@ class NMRSpectrum(DataUdic):
         return self._convert_unit(step) - self._convert_unit('0'+step_unit)
     
     ################# Data processing  #####################
+    def tp(self, copy=True, flag='auto'):
+        _ret = super(NMRSpectrum, self).tp(copy, flag)
+        if isinstance(_ret, DataUdic):
+            return NMRSpectrum(_ret, _ret.udic, self)
+        
+        return _ret
+    
     def setData(self, input_array):
         if hasattr(input_array, 'udic'):
             udic = input_array.udic
         else:
             udic = self.udic
             
-        if self.nbytes != input_array.nbytes or self.shape != input_array.shape:
+        if self.nbytes != input_array.nbytes:# TODO: or self.shape != input_array.shape:
             return NMRSpectrum(input_array, udic, self)
-
+        
+        
         self.data = input_array.data
         self.dtype = input_array.dtype
+        self.shape = input_array.shape
         self.udic = udic
 
         return self

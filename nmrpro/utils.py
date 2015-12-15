@@ -2,7 +2,7 @@ from nmrglue.fileio.fileiobase import unit_conversion
 import inspect
 
 def str2bool(v):
-  return v.lower() in ("yes", "true", "t", "1")
+    return v.lower() in ("yes", "true", "t", "1")
 
 def num_unit(s):
     numeric = '0123456789-.'

@@ -1,6 +1,7 @@
 from utils import listIndexOf, indexOf, get_package_name
 from copy import deepcopy
 import numpy as np
+import traceback
 
 class WorkflowStep:
     def __init__(self, f, *args, **kwargs):
@@ -26,8 +27,9 @@ class WorkflowStep:
         if self.__order is not None:
             return self.__order
         
-        if hasattr(self._original[0], '_order'):
-            return self._original[0]._order
+        f = self._original[0]
+        if hasattr(f, '_order'):
+            return f._order
         
         return (None, None, None, False)
     
@@ -87,13 +89,13 @@ class Workflow:
     def _get_order_idx(self, step):
         step_order = step._order
         stepname = step.operation_name
-        
+        stepcount = len(self._stepnames)
         if isinstance(step_order, str):
             if step_order == 'first':
                 return 0, False
 
             if step_order == 'last':
-                return len(self._stepnames), False
+                return stepcount, False
         
         before, after, replaces, repeatable = step_order
         
@@ -114,11 +116,14 @@ class Workflow:
             idx = listIndexOf(after, self._stepnames, method='last')
             after_idx = max(idx) + 1
         
-        before_idx = len(self._stepnames)
+        before_idx = stepcount
+        print('before_order', before)
         if before is not None:
             idx = listIndexOf(before, self._stepnames)
-            before_idx = min(idx)
-            if before_idx < 0: before_idx = len(self._stepnames)
+            
+            before_idx = min(idx, key=lambda x: x if x >=0 else stepcount)
+            if before_idx < 0: before_idx = stepcount
+            print('before_idx calc', before_idx, self._stepnames)
         
         if after_idx >  before_idx:
             raise ValueError('Incorrect step order. "before" & "after" are not compatible')
@@ -128,10 +133,15 @@ class Workflow:
 class WFManager:
     @classmethod
     def excuteSteps(cls, steps, seed):
+        print('executing steps' + str(len(steps)))
+        #traceback.print_stack(limit=4)
         return reduce(lambda x, y: y(x), steps, seed)
     
     @classmethod
     def computeStep(cls, step, spec):
+        print('in is_locked:', _islocked('no_transpose', spec), _islocked('workflow_lock', spec))
+        if _islocked('no_transpose', spec):
+            traceback.print_stack()
         wf = deepcopy(spec.history)
         all_steps = wf._steps
         idx, replace = wf._get_order_idx(step)
@@ -142,15 +152,13 @@ class WFManager:
             after_idx += 1
         
         last = after_idx == len(all_steps)
-        #before_steps = all_steps[:before_idx]
-        #after_steps = all_steps[:after_idx]
         
         print('before, after', before_idx, after_idx)
         if before_idx == len(all_steps):
             input_ = spec
         else:
             input_ = spec.setData( cls.excuteSteps(all_steps[:before_idx], spec.original) )
-            print(wf._stepnames[:before_idx], type(input_))
+            print('steps b4: ', wf._stepnames[:before_idx], type(input_))
             
         
         ret = step(input_)
@@ -158,7 +166,8 @@ class WFManager:
         if isinstance(ret, WorkflowStep):
             step._computed = ret._computed
             ret = step(input_)
-            
+        
+        print('out is_locked:', _islocked('no_transpose', spec), _islocked('workflow_lock', spec))
         # If the function returned the processed spectrum, 
         # write the original function and arguments in the history.
         from .classes.NMRSpectrum import NMRSpectrum
@@ -174,7 +183,7 @@ class WFManager:
             if len(all_steps[after_idx:]) > 0:
                 print('excuting rest')
                 output_ = cls.excuteSteps(all_steps[after_idx:], ret)
-                ret.setData(output_)
+                ret = ret.setData(output_)
             
             wf.append(step)
             ret.history = wf
@@ -183,3 +192,9 @@ class WFManager:
         
         #print('manager_out', wf._stepnames, type(ret))
         return ret
+        
+def _islocked(lock_name, s):
+    if hasattr(s, 'spec_flags') and s.spec_flags.has_key(lock_name):
+        return s.spec_flags[lock_name]
+    
+    return False

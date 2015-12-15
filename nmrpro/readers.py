@@ -26,9 +26,9 @@ def fromFile(file, format='auto'):
 
 def fromBruker(file, remove_filter=True, read_pdata=True):
     dic, data = bruker.read(file);
-    if(read_pdata):
+    if read_pdata:
         pdata_file = find_pdata(file, data.ndim)
-        
+        print(pdata_file)
         if(pdata_file is not None):
             procs, data = bruker.read_pdata(pdata_file)
         else: read_pdata = False
@@ -43,6 +43,7 @@ def fromBruker(file, remove_filter=True, read_pdata=True):
         for i in range(0, data.ndim):
             u[i]['complex'] = False
             u[i]['freq'] = True
+            u[i]['time'] = False
     
     uc  = [uc_from_udic(u, dim) for dim in range(0, data.ndim)]
     
