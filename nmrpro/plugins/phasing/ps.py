@@ -93,7 +93,7 @@ def atan_ps0(data):
 
     angle = np.arctan((a-c)/(d-b))
     phase0 = angle*180/np.pi
-    print(phase0)
+    
     return phase0,0
 
 # TODO: fix implementation of angle1

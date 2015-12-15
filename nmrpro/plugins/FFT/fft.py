@@ -20,11 +20,11 @@ def fft(s):
 @perSpectrum
 @both_dimensions
 def fft_positive(s):
-    print('from fft',type(s), 'dim', s.udic[0]['label'])
+    
     if isinstance(s, NMRSpectrum):
-        print('original', np.array_equal(s, s.original))
+        
     else:
-        print('fft udic')
+        
     #traceback.print_stack(limit=4)
     ret = ndarray_subclasser( p.fft_positive )(s)
     _update_udic(ret)

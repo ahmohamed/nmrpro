@@ -133,7 +133,7 @@ def both_dimensions(f, tp='auto'):
         # of both_dimensions. This may be the case when decorated functions call
         # other decorated ones, or in recursion.
         # In this case, the 'both_dimension' effect is kept only on the outer level.
-        ###print(f.__module__, f.__name__, s.udic.get('no_transpose', False))
+        ###
         Fn_args, Fn_kwargs = parseFnArgs(s.udic['ndim'], args, kwargs)
         
         if s.udic['ndim'] < 2 or _islocked('no_transpose', s):
@@ -153,9 +153,9 @@ def both_dimensions(f, tp='auto'):
             if i in apply_to_dim:
                 ret = f(ret, *Fn_args[i], **Fn_kwargs[i])
             
-            print('b4tp dim'+str(i), type(ret))
+            
             ret = ret.tp(flag=tp, copy=False)
-            print('aftertp dim'+str(i), type(ret))
+            
         
         _unlock('no_transpose', s, ret)
         return ret

@@ -17,7 +17,7 @@ def EM(spec, lb=0.2):
     sw = spec.udic[spec.ndim-1]['sw']
     
     lb = float(lb)
-    #print(lb,sw,n)
+    #
     return np.exp(-pi * np.arange(n) * (lb/sw))
 
 def GM(spec, g1=0.0, g2=0.0, g3=0.0):
@@ -25,7 +25,7 @@ def GM(spec, g1=0.0, g2=0.0, g3=0.0):
     sw = spec.udic[spec.ndim-1]['sw']
     
     g1, g2, g3 = float(g1), float(g2), float(g3)
-    #print(g1,g2,g3,sw,n)
+    #
     e = pi * np.arange(n) * (g1/sw)
     g = 0.6 * pi * (g2/sw) * (g3 * (n - 1) - np.arange(n))
     return np.exp(e - g * g)
@@ -124,9 +124,9 @@ def apod(spec, inv=False, c=1., *windows, **kwwindows):
     if not spec.udic[spec.ndim-1]['time']:
         raise DomainError('Cant perform apodization, spectrum is not in time domain')
     
-    #print('apod original', np.array_equal(spec, spec.original))
+    #
     windows += tuple( [v for v in kwwindows.values() if v] )
-    print(windows)
+    
     windows = [w(spec) if callable(w) else w for w in windows]
     n = spec.shape[-1]
     
@@ -142,7 +142,7 @@ def apod(spec, inv=False, c=1., *windows, **kwwindows):
     if inv:
         total = 1 / total
         
-    #print('total', total)
+    #
     return spec * total
     
 

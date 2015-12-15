@@ -9,7 +9,7 @@ from .exceptions import NoNMRDataError
 def fromFile(file, format='auto'):
     if format == 'auto':
         files = get_files(file)
-        print('files', files)
+        
         if files is None:
             raise NoNMRDataError('The path supplied has no NMR spectra: %s' %file)
         elif len(files) == 1:
@@ -28,7 +28,7 @@ def fromBruker(file, remove_filter=True, read_pdata=True):
     dic, data = bruker.read(file);
     if read_pdata:
         pdata_file = find_pdata(file, data.ndim)
-        print(pdata_file)
+        
         if(pdata_file is not None):
             procs, data = bruker.read_pdata(pdata_file)
         else: read_pdata = False

@@ -263,7 +263,7 @@ class NMRSpectrum(DataUdic):
 class NMRSpectrum1D(NMRSpectrum):
     def __array_finalize__(self, obj):
         super(NMRSpectrum1D, self).__array_finalize__(obj)
-        #print("final1d")
+        #
 
         #def __array_wrap__(self, obj):
         #    super(NMRSpectrum1D, self).__array_wrap__(obj)
@@ -272,7 +272,7 @@ class NMRSpectrum1D(NMRSpectrum):
 class NMRSpectrum2D(NMRSpectrum):
     def __array_finalize__(self, obj):
         super(NMRSpectrum2D, self).__array_finalize__(obj)
-        #print("final2d", getattr(obj, 'uc', None))
+        #
         
     # def tp(self, copy=True):
     #     if self.udic[0]['complex'] and self.udic[1]['complex']:

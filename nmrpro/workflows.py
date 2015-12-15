@@ -102,7 +102,7 @@ class Workflow:
         #Repeatable
         if not repeatable:
             idx = indexOf(stepname, self._stepnames)
-            print('repeatable', self._stepnames, stepname, idx)
+            
             if idx > -1: return idx, True
             
         # Replaces
@@ -117,13 +117,13 @@ class Workflow:
             after_idx = max(idx) + 1
         
         before_idx = stepcount
-        print('before_order', before)
+        
         if before is not None:
             idx = listIndexOf(before, self._stepnames)
             
             before_idx = min(idx, key=lambda x: x if x >=0 else stepcount)
             if before_idx < 0: before_idx = stepcount
-            print('before_idx calc', before_idx, self._stepnames)
+            
         
         if after_idx >  before_idx:
             raise ValueError('Incorrect step order. "before" & "after" are not compatible')
@@ -133,13 +133,13 @@ class Workflow:
 class WFManager:
     @classmethod
     def excuteSteps(cls, steps, seed):
-        print('executing steps' + str(len(steps)))
+        
         #traceback.print_stack(limit=4)
         return reduce(lambda x, y: y(x), steps, seed)
     
     @classmethod
     def computeStep(cls, step, spec):
-        print('in is_locked:', _islocked('no_transpose', spec), _islocked('workflow_lock', spec))
+        
         if _islocked('no_transpose', spec):
             traceback.print_stack()
         wf = deepcopy(spec.history)
@@ -153,12 +153,12 @@ class WFManager:
         
         last = after_idx == len(all_steps)
         
-        print('before, after', before_idx, after_idx)
+        
         if before_idx == len(all_steps):
             input_ = spec
         else:
             input_ = spec.setData( cls.excuteSteps(all_steps[:before_idx], spec.original) )
-            print('steps b4: ', wf._stepnames[:before_idx], type(input_))
+            
             
         
         ret = step(input_)
@@ -167,30 +167,30 @@ class WFManager:
             step._computed = ret._computed
             ret = step(input_)
         
-        print('out is_locked:', _islocked('no_transpose', spec), _islocked('workflow_lock', spec))
+        
         # If the function returned the processed spectrum, 
         # write the original function and arguments in the history.
         from .classes.NMRSpectrum import NMRSpectrum
         if isinstance(ret, NMRSpectrum):
-            print('history', ret.history._stepnames, wf._stepnames)
+            
             if ret.history._stepnames != wf._stepnames and (not ret.history.empty()):
                 # The function modified the history itself.
                 # history contains at least one operation.
-                print('early return')
+                
                 return ret # we trust the function.
             
             # By now, ret.history either contains the input_ history or is empty
             if len(all_steps[after_idx:]) > 0:
-                print('excuting rest')
+                
                 output_ = cls.excuteSteps(all_steps[after_idx:], ret)
                 ret = ret.setData(output_)
             
             wf.append(step)
             ret.history = wf
-            print('manager', wf._stepnames, len(all_steps[after_idx:]))
+            
             
         
-        #print('manager_out', wf._stepnames, type(ret))
+        #
         return ret
         
 def _islocked(lock_name, s):

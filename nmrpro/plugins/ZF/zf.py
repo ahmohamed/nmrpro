@@ -13,7 +13,7 @@ from nmrglue.process.proc_base import zf_size
 @perSpectrum
 @forder(before=['FFT'])
 def zf1d(s, size='auto'):
-    print('ZF: ', size)
+    
     dim = s.udic['ndim'] - 1
     if size == 'auto':
         size = s.udic[dim]['size'] * 2
