@@ -8,13 +8,13 @@ except ImportError:
 setup(
   name = 'nmrpro',
   packages = find_packages(), # this must be the same as the name above
-  version = '0.1',
+  version = '0.2.4',
   description = 'Interactive processing of NMR Spectra',
   author = 'Ahmed Mohamed',
   author_email = 'mohamed@kuicr.kyoto-u.ac.jp',
-  requires=['numpy', 'scipy', 'nmrglue'],
+  install_requires=['numpy', 'scipy', 'nmrglue>=0.6'],
+  dependency_links=['https://github.com/jjhelmus/nmrglue/archive/master.zip#egg=nmrglue-0.6'],
   url = 'https://github.com/ahmohamed/nmrpro', # use the URL to the github repo
-  #download_url = 'https://github.com/ahmohamed/nmrpro/tarball/0.1',
   license='MIT',
   keywords = ['nmr', 'spectra', 'multi-dimensional'],
   classifiers = [],

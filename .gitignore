@@ -9,3 +9,5 @@
 
 test_files/*
 .ipynb*
+dist/*
+*.egg-info/*
