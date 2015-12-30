@@ -4,7 +4,10 @@ from .utils import make_uc_pipe
 from .NMRFileManager import get_files, find_pdata
 from classes.NMRSpectrum import NMRSpectrum
 import nmrglue.process.pipe_proc as pp
+from nmrglue import __version__ as ng_version
 from .exceptions import NoNMRDataError
+
+ng_version = float(ng_version[:3])
 
 def fromFile(file, format='auto'):
     if format == 'auto':
@@ -34,7 +37,10 @@ def fromBruker(file, remove_filter=True, read_pdata=True):
         else: read_pdata = False
     
     if remove_filter and not read_pdata:
-        data = bruker.remove_digital_filter(dic, data, True)
+        if ng_version > 0.5:
+            data = bruker.remove_digital_filter(dic, data, True)
+        else:
+            data = bruker.remove_digital_filter(dic, data)
     
     u = bruker.guess_udic(dic, data)    
     u["original_format"] = 'Bruker'

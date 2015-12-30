@@ -8,11 +8,11 @@ except ImportError:
 setup(
   name = 'nmrpro',
   packages = find_packages(), # this must be the same as the name above
-  version = '0.2.4',
+  version = '0.2.6',
   description = 'Interactive processing of NMR Spectra',
   author = 'Ahmed Mohamed',
   author_email = 'mohamed@kuicr.kyoto-u.ac.jp',
-  install_requires=['numpy', 'scipy', 'nmrglue>=0.6'],
+  install_requires=['numpy', 'scipy', 'nmrglue>=0.5'],
   dependency_links=['https://github.com/jjhelmus/nmrglue/archive/master.zip#egg=nmrglue-0.6'],
   url = 'https://github.com/ahmohamed/nmrpro', # use the URL to the github repo
   license='MIT',
