@@ -2,9 +2,9 @@ import unittest
 from nmrglue.process.proc_base import zf_size, fft
 from nmrglue.fileio.bruker import read
 import nmrglue as ng
-from ...classes.NMRSpectrum import NMRSpectrum
+from nmrpro.classes.NMRSpectrum import NMRSpectrum
 from .zf import zf1d, zf2d
-from ..FFT.fft import fft1d
+from nmrpro.plugins.FFT.fft import fft1d
 import numpy.testing as ts
 
 class zf_1DTest(unittest.TestCase):

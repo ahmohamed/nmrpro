@@ -2,7 +2,7 @@ import sys
 from copy import deepcopy
 from classes.NMRSpectrum import NMRSpectrum, NMRDataset, DataUdic
 from .workflows import Workflow, WorkflowStep, WFManager
-from .plugins import JSCommand
+from .plugins.PluginMount import JSCommand
 from .plugins.JSinput2 import _parse_interactive_func, Input, ArgsPanel
 
 from numpy import array

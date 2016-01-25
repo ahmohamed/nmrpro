@@ -1,7 +1,7 @@
 import unittest
 import nmrglue as ng
-from ...classes.NMRSpectrum import NMRSpectrum
-from ..PluginMount import JSCommand
+from nmrpro.classes.NMRSpectrum import NMRSpectrum
+from nmrpro.plugins.PluginMount import JSCommand
 from .fft import fft1d
 import numpy.testing as ts
 from numpy import array

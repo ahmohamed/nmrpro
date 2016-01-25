@@ -1,6 +1,6 @@
-from ...classes.NMRSpectrum import NMRSpectrum, DataUdic
-from ...decorators import ndarray_subclasser, perDimension, perSpectrum, jsCommand, interaction
-from ..JSinput2 import Include
+from nmrpro.classes.NMRSpectrum import NMRSpectrum, DataUdic
+from nmrpro.decorators import ndarray_subclasser, perDimension, perSpectrum, jsCommand, interaction
+from nmrpro.plugins.JSinput2 import Include
 from warnings import warn
 import nmrglue.process.proc_base as p
 import numpy as np

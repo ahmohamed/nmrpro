@@ -2,8 +2,8 @@ import numpy as np
 from nmrglue.process.proc_base import ifft, fft, tp_hyper, c2ri
 from nmrglue.fileio.fileiobase import unit_conversion
 from collections import OrderedDict
-from ..utils import num_unit
-from ..workflows import Workflow, WorkflowStep
+from nmrpro.utils import num_unit
+from nmrpro.workflows import Workflow, WorkflowStep
 from copy import deepcopy
 
 class DataUdic(np.ndarray):
@@ -77,17 +77,17 @@ class DataUdic(np.ndarray):
 class NMRSpectrum(DataUdic):
     @classmethod
     def fromFile(cls, *args, **kwargs):
-        from ..readers import fromFile
+        from nmrpro.readers import fromFile
         return fromFile(*args, **kwargs)
         
     @classmethod
     def fromBruker(cls, *args, **kwargs):
-        from ..readers import fromBruker
+        from nmrpro.readers import fromBruker
         return fromBruker(*args, **kwargs)
 
     @classmethod
     def fromPipe(cls, *args, **kwargs):
-        from ..readers import fromPipe
+        from nmrpro.readers import fromPipe
         return fromPipe(*args, **kwargs)
 
     def __new__(cls, input_array, udic, parent=None, uc=None):

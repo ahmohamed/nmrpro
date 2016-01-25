@@ -4,10 +4,10 @@ import nmrglue.process.pipe_proc as pipep
 from nmrglue.fileio.bruker import read,guess_udic
 import nmrglue.fileio.pipe as pipe
 from nmrglue.fileio.convert import converter
-from ...classes.NMRSpectrum import NMRSpectrum
-from ...exceptions import NMRShapeError
-from ..ZF.zf import zf1d
-from ..FFT.fft import fft1d
+from nmrpro.classes.NMRSpectrum import NMRSpectrum
+from nmrpro.exceptions import NMRShapeError
+from nmrpro.plugins.ZF.zf import zf1d
+from nmrpro.plugins.FFT.fft import fft1d
 from .apod import *
 import numpy.testing as ts
 

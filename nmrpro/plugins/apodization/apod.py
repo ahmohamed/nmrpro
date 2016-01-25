@@ -1,10 +1,10 @@
-from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
-from ...decorators import *
-from ...exceptions import NMRShapeError, DomainError
-from ..JSinput2 import Include
+from nmrpro.classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
+from nmrpro.decorators import *
+from nmrpro.exceptions import NMRShapeError, DomainError
+from nmrpro.plugins.JSinput2 import Include
 
 import numpy as np
-from ...utils import str2bool
+from nmrpro.utils import str2bool
 
 # Based on the implementations in NMRglue
 # These functions return the apodization function, instead of the corrected data.

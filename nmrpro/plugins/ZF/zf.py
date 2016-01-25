@@ -1,7 +1,7 @@
 import nmrglue as ng
-from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D, DataUdic
-from ...decorators import ndarray_subclasser, perSpectrum
-from ...decorators import *
+from nmrpro.classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D, DataUdic
+from nmrpro.decorators import ndarray_subclasser, perSpectrum
+from nmrpro.decorators import *
 from nmrglue.process.proc_base import zf_size
 
 @jsCommand(['Processing', 'Zero Filling', 'Zero fill to double size'], [1], args=None)

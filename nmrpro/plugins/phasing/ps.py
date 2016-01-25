@@ -1,11 +1,11 @@
 import nmrglue.process.proc_base as p
 import numpy as np
-from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
-from ...decorators import *
-from ...exceptions import DomainError
-from ...utils import str2bool
-from ..FFT.fft import fft_positive
-from ...workflows import WorkflowStep
+from nmrpro.classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
+from nmrpro.decorators import *
+from nmrpro.exceptions import DomainError
+from nmrpro.utils import str2bool
+from nmrpro.plugins.FFT.fft import fft_positive
+from nmrpro.workflows import WorkflowStep
 
 from scipy.optimize import minimize
 from scipy.stats import gmean
