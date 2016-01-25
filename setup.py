@@ -8,7 +8,7 @@ except ImportError:
 setup(
   name = 'nmrpro',
   packages = find_packages(), # this must be the same as the name above
-  version = '0.2.6',
+  version = '0.2.7',
   description = 'Interactive processing of NMR Spectra',
   author = 'Ahmed Mohamed',
   author_email = 'mohamed@kuicr.kyoto-u.ac.jp',
