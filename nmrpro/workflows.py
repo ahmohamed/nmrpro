@@ -5,9 +5,11 @@ import traceback
 
 class WorkflowStep:
     def __init__(self, f, *args, **kwargs):
+        self.query_params = kwargs.pop('query_params', None)
         self._original = (f, args, kwargs)
         self._computed = (f, args, kwargs)
         self.__order = None
+        
     
     def set_order(self, before=None, after=None, replaces=None, repeatable=False):
         if before == 'last':
@@ -86,6 +88,12 @@ class Workflow:
         s = s.setData(reduce(lambda x, y: y(x), self._steps, s.original))
         return s
     
+    
+    
+    @property
+    def query_params(self):
+        return '&'.join(s.query_params for s in self._steps)
+    
     def _get_order_idx(self, step):
         step_order = step._order
         stepname = step.operation_name
@@ -139,7 +147,6 @@ class WFManager:
     
     @classmethod
     def computeStep(cls, step, spec):
-        
         if _islocked('no_transpose', spec):
             traceback.print_stack()
         wf = deepcopy(spec.history)
@@ -153,14 +160,12 @@ class WFManager:
         
         last = after_idx == len(all_steps)
         
-        
         if before_idx == len(all_steps):
             input_ = spec
         else:
             input_ = spec.setData( cls.excuteSteps(all_steps[:before_idx], spec.original) )
             
             
-        
         ret = step(input_)
         # If the function returned a computed step, execute it.
         if isinstance(ret, WorkflowStep):
@@ -187,10 +192,7 @@ class WFManager:
             
             wf.append(step)
             ret.history = wf
-            
-            
-        
-        #
+         
         return ret
         
 def _islocked(lock_name, s):
