@@ -1,7 +1,7 @@
 from .ps import *
 
 __all__ = ['ps', 'autops']
-#print('phasing imported')    
+#
 # class Autophase(JSCommand):
 #     menu_path = ['Processing', 'Phase Correction', 'Automatic phase correction']
 #     fun = staticmethod(webPhase)

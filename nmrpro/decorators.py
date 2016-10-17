@@ -1,8 +1,9 @@
 import sys
 from copy import deepcopy
 from classes.NMRSpectrum import NMRSpectrum, NMRDataset, DataUdic
-from .workflows import Workflow, WorkflowStep, WFManager
-from .plugins import JSCommand
+from .workflows import Workflow, WorkflowStep
+from .workflow_manager import WFManager
+from .plugins.PluginMount import JSCommand
 from .plugins.JSinput2 import _parse_interactive_func, Input, ArgsPanel
 
 from numpy import array
@@ -11,7 +12,7 @@ from functools import wraps as wrp
 import inspect
 import ipynb as nb
 
-__all__ = ['perSpectrum', 'perRow', 'both_dimensions', 'jsCommand', 'forder', 'interaction', 'ndarray_subclasser']
+__all__ = ['perSpectrum', 'perRow', 'perDimension', 'jsCommand', 'forder', 'interaction', 'ndarray_subclasser']
 
 def wraps(f):
     if not hasattr(f, '__argspec'):
@@ -20,6 +21,12 @@ def wraps(f):
 
 def jsCommand(path, nd, args='auto'):
     def decorator(f):
+        if not hasattr(f, '__input_class'):
+            raise AttributeError(
+                'Functions should have an input class defined before jsCommand '
+                'decorator can be used. Use perSpectrum decorator first on '
+                '%s function.' % f.__name__)
+            
         classname = "autogen_" + f.__name__ 
         
         if args == 'auto':
@@ -84,7 +91,7 @@ def forder(before=None, after=None, replaces=None, repeatable=False):
     
     return decorator
 
-def both_dimensions(f, tp='auto'):
+def perDimension(f, tp='auto'):
     '''Function decorator: applies the function to both dimemsions
     of a 2D NMR spectrum.
 
@@ -130,10 +137,10 @@ def both_dimensions(f, tp='auto'):
     @wraps(f)
     def newf(s, *args, **kwargs):
         # The purpose of no_transpose flag is to prevent nested decoration 
-        # of both_dimensions. This may be the case when decorated functions call
+        # of perDimension. This may be the case when decorated functions call
         # other decorated ones, or in recursion.
         # In this case, the 'both_dimension' effect is kept only on the outer level.
-        ###print(f.__module__, f.__name__, s.udic.get('no_transpose', False))
+        ###
         Fn_args, Fn_kwargs = parseFnArgs(s.udic['ndim'], args, kwargs)
         
         if s.udic['ndim'] < 2 or _islocked('no_transpose', s):
@@ -153,9 +160,9 @@ def both_dimensions(f, tp='auto'):
             if i in apply_to_dim:
                 ret = f(ret, *Fn_args[i], **Fn_kwargs[i])
             
-            print('b4tp dim'+str(i), type(ret))
+            
             ret = ret.tp(flag=tp, copy=False)
-            print('aftertp dim'+str(i), type(ret))
+            
         
         _unlock('no_transpose', s, ret)
         return ret
@@ -192,7 +199,7 @@ def perSpectrum(f):
         
         return proc_spec(*args, **kwargs)
         
-
+    newf.__input_class = 'spectrum'
     return newf
 
 def perRow(f):

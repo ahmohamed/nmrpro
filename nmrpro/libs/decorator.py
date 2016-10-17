@@ -189,8 +189,8 @@ class FunctionMaker(object):
             code = compile(src, filename, 'single')
             exec(code, evaldict)
         except:
-            print('Error in generated code:', file=sys.stderr)
-            print(src, file=sys.stderr)
+            
+            
             raise
         func = evaldict[name]
         if addsource:

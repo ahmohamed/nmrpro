@@ -17,6 +17,7 @@ class JSCommand:
     
     @staticmethod
     def shorten(name, dic):
+        name = name.strip('_')
         if not dic.has_key(name[0:1]):
             return name[0:1]
         elif not dic.has_key(name[0:2]):

@@ -5,7 +5,6 @@
 *.swp
 *.*~
 
-# test data
-
-test_files/*
 .ipynb*
+dist/*
+*.egg-info/*

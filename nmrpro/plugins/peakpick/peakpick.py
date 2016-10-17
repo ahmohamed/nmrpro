@@ -1,9 +1,9 @@
 import nmrglue.analysis.peakpick as pp
-from ...classes.NMRSpectrum import SpecFeature
+from nmrpro.classes.NMRSpectrum import SpecFeature
 import numpy as np
 from scipy.signal import find_peaks_cwt
-from ...decorators import *
-from ..JSinput2 import ArgsPanel, Include, Threshold
+from nmrpro.decorators import *
+from nmrpro.plugins.JSinput2 import ArgsPanel, Include, Threshold
 
 __all__ = ['pick']
 

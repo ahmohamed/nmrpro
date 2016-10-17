@@ -2,10 +2,10 @@ import nmrglue as ng
 import numpy as np
 import nmrglue.process.proc_bl as bl
 from scipy.optimize import curve_fit
-from ...decorators import *
-from ...exceptions import DomainError
-from ...workflows import WorkflowStep
-from ..JSinput2 import ArgsPanel, Include
+from nmrpro.decorators import *
+from nmrpro.exceptions import DomainError
+from nmrpro.workflows import WorkflowStep
+from nmrpro.plugins.JSinput2 import ArgsPanel, Include
 
 
 #TODO: last is a numUnit, currently in %

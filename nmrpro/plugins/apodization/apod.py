@@ -1,10 +1,10 @@
-from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
-from ...decorators import *
-from ...exceptions import NMRShapeError, DomainError
-from ..JSinput2 import Include
+from nmrpro.classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
+from nmrpro.decorators import *
+from nmrpro.exceptions import NMRShapeError, DomainError
+from nmrpro.plugins.JSinput2 import Include
 
 import numpy as np
-from ...utils import str2bool
+from nmrpro.utils import str2bool
 
 # Based on the implementations in NMRglue
 # These functions return the apodization function, instead of the corrected data.
@@ -17,7 +17,7 @@ def EM(spec, lb=0.2):
     sw = spec.udic[spec.ndim-1]['sw']
     
     lb = float(lb)
-    #print(lb,sw,n)
+    #
     return np.exp(-pi * np.arange(n) * (lb/sw))
 
 def GM(spec, g1=0.0, g2=0.0, g3=0.0):
@@ -25,7 +25,7 @@ def GM(spec, g1=0.0, g2=0.0, g3=0.0):
     sw = spec.udic[spec.ndim-1]['sw']
     
     g1, g2, g3 = float(g1), float(g2), float(g3)
-    #print(g1,g2,g3,sw,n)
+    #
     e = pi * np.arange(n) * (g1/sw)
     g = 0.6 * pi * (g2/sw) * (g3 * (n - 1) - np.arange(n))
     return np.exp(e - g * g)
@@ -118,15 +118,15 @@ def trafincate(a, n):
     tri=(False, Include(TRI)) #TODO: argslabels
 )
 @perSpectrum
-@both_dimensions
+@perDimension
 @forder(before=['FFT', 'ZF'])
 def apod(spec, inv=False, c=1., *windows, **kwwindows):
     if not spec.udic[spec.ndim-1]['time']:
         raise DomainError('Cant perform apodization, spectrum is not in time domain')
     
-    #print('apod original', np.array_equal(spec, spec.original))
+    #
     windows += tuple( [v for v in kwwindows.values() if v] )
-    print(windows)
+    
     windows = [w(spec) if callable(w) else w for w in windows]
     n = spec.shape[-1]
     
@@ -142,11 +142,12 @@ def apod(spec, inv=False, c=1., *windows, **kwwindows):
     if inv:
         total = 1 / total
         
-    #print('total', total)
+    #
     return spec * total
     
 
 @jsCommand(['Processing', 'Apodization', 'Expoenential line broadnening (auto)'], [1,2], args=None)
+@perSpectrum
 def _em_apod(s):
     return apod(s, w=lambda s: EM(s, 0.2))
 
