@@ -4,7 +4,7 @@ import nmrglue.process.pipe_proc as pipep
 from nmrglue.fileio.bruker import read,guess_udic
 import nmrglue.fileio.pipe as pipe
 from nmrglue.fileio.convert import converter
-from nmrpro.reader import fromBruker, fromPipe
+from nmrpro.readers import fromBruker, fromPipe
 from nmrpro.classes.NMRSpectrum import NMRSpectrum
 from nmrpro.exceptions import NMRShapeError
 from nmrpro.plugins.ZF.zf import zf1d

@@ -1,6 +1,6 @@
 import unittest
 import nmrglue as ng
-from nmrpro.reader import fromBruker, fromPipe
+from nmrpro.readers import fromBruker, fromPipe
 from nmrpro.classes.NMRSpectrum import NMRSpectrum
 from nmrpro.plugins.PluginMount import JSCommand
 from .fft import fft1d

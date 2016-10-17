@@ -1,5 +1,5 @@
 import unittest
-from nmrpro.reader import fromBruker, fromPipe, fromFile
+from nmrpro.readers import fromBruker, fromPipe, fromFile
 from .NMRSpectrum import NMRSpectrum, NMRDataset
 import numpy.testing as ts
 import nmrglue as ng

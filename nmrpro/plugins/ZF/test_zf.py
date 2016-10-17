@@ -2,7 +2,7 @@ import unittest
 from nmrglue.process.proc_base import zf_size, fft
 from nmrglue.fileio.bruker import read
 import nmrglue as ng
-from nmrpro.reader import fromBruker, fromPipe
+from nmrpro.readers import fromBruker, fromPipe
 from nmrpro.classes.NMRSpectrum import NMRSpectrum
 from .zf import zf1d, zf2d
 from nmrpro.plugins.FFT.fft import fft1d
