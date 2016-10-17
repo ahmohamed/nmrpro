@@ -1,7 +1,7 @@
 from .bl import baseline
 # from .bl import webBaseline, SOL
-# from .. import JSinput as inp
-# from ..PluginMount import JSCommand
+# from nmrpro.plugins. import JSinput as inp
+# from nmrpro.plugins.PluginMount import JSCommand
     
 # class ConstantBaselineCorrection(JSCommand):
 #     menu_path = ['Processing', 'Baseline Correction', 'Constant Baseline Correction']

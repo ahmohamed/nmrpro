@@ -4,12 +4,15 @@ from .utils import make_uc_pipe
 from .NMRFileManager import get_files, find_pdata
 from classes.NMRSpectrum import NMRSpectrum
 import nmrglue.process.pipe_proc as pp
+from nmrglue import __version__ as ng_version
 from .exceptions import NoNMRDataError
+
+ng_version = float(ng_version[:3])
 
 def fromFile(file, format='auto'):
     if format == 'auto':
         files = get_files(file)
-        print('files', files)
+        
         if files is None:
             raise NoNMRDataError('The path supplied has no NMR spectra: %s' %file)
         elif len(files) == 1:
@@ -28,13 +31,16 @@ def fromBruker(file, remove_filter=True, read_pdata=True):
     dic, data = bruker.read(file);
     if read_pdata:
         pdata_file = find_pdata(file, data.ndim)
-        print(pdata_file)
+        
         if(pdata_file is not None):
             procs, data = bruker.read_pdata(pdata_file)
         else: read_pdata = False
     
     if remove_filter and not read_pdata:
-        data = bruker.remove_digital_filter(dic, data, True)
+        if ng_version > 0.5:
+            data = bruker.remove_digital_filter(dic, data, True)
+        else:
+            data = bruker.remove_digital_filter(dic, data)
     
     u = bruker.guess_udic(dic, data)    
     u["original_format"] = 'Bruker'

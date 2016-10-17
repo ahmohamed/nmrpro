@@ -2,8 +2,8 @@ import numpy as np
 from nmrglue.process.proc_base import ifft, fft, tp_hyper, c2ri
 from nmrglue.fileio.fileiobase import unit_conversion
 from collections import OrderedDict
-from ..utils import num_unit
-from ..workflows import Workflow, WorkflowStep
+from nmrpro.utils import num_unit
+from nmrpro.workflows import Workflow, WorkflowStep
 from copy import deepcopy
 
 class DataUdic(np.ndarray):
@@ -75,21 +75,6 @@ class DataUdic(np.ndarray):
 
 
 class NMRSpectrum(DataUdic):
-    @classmethod
-    def fromFile(cls, *args, **kwargs):
-        from ..readers import fromFile
-        return fromFile(*args, **kwargs)
-        
-    @classmethod
-    def fromBruker(cls, *args, **kwargs):
-        from ..readers import fromBruker
-        return fromBruker(*args, **kwargs)
-
-    @classmethod
-    def fromPipe(cls, *args, **kwargs):
-        from ..readers import fromPipe
-        return fromPipe(*args, **kwargs)
-
     def __new__(cls, input_array, udic, parent=None, uc=None):
         if input_array.ndim == 1:
             cls = NMRSpectrum1D
@@ -263,7 +248,7 @@ class NMRSpectrum(DataUdic):
 class NMRSpectrum1D(NMRSpectrum):
     def __array_finalize__(self, obj):
         super(NMRSpectrum1D, self).__array_finalize__(obj)
-        #print("final1d")
+        #
 
         #def __array_wrap__(self, obj):
         #    super(NMRSpectrum1D, self).__array_wrap__(obj)
@@ -272,7 +257,7 @@ class NMRSpectrum1D(NMRSpectrum):
 class NMRSpectrum2D(NMRSpectrum):
     def __array_finalize__(self, obj):
         super(NMRSpectrum2D, self).__array_finalize__(obj)
-        #print("final2d", getattr(obj, 'uc', None))
+        #
         
     # def tp(self, copy=True):
     #     if self.udic[0]['complex'] and self.udic[1]['complex']:

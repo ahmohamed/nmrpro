@@ -1,6 +1,6 @@
 from .peakpick import *
-# from .. import JSinput as inp
-# from ..PluginMount import JSCommand
+# from nmrpro.plugins. import JSinput as inp
+# from nmrpro.plugins.PluginMount import JSCommand
 #
 # pick_t = lambda data, args: pick(data,{'a':'t', 'thresh':float(args.get('thresh'))})
 

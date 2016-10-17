@@ -1,11 +1,11 @@
 import nmrglue.process.proc_base as p
 import numpy as np
-from ...classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
-from ...decorators import *
-from ...exceptions import DomainError
-from ...utils import str2bool
-from ..FFT.fft import fft_positive
-from ...workflows import WorkflowStep
+from nmrpro.classes.NMRSpectrum import NMRSpectrum, NMRSpectrum2D
+from nmrpro.decorators import *
+from nmrpro.exceptions import DomainError
+from nmrpro.utils import str2bool
+from nmrpro.plugins.FFT.fft import fft_positive
+from nmrpro.workflows import WorkflowStep
 
 from scipy.optimize import minimize
 from scipy.stats import gmean
@@ -93,7 +93,7 @@ def atan_ps0(data):
 
     angle = np.arctan((a-c)/(d-b))
     phase0 = angle*180/np.pi
-    print(phase0)
+    
     return phase0,0
 
 # TODO: fix implementation of angle1
@@ -141,7 +141,7 @@ def atan(data, p0only):
 
 @jsCommand(['Processing', 'Phase Correction', 'Manual phase correction'], [1,2])
 @perSpectrum
-@both_dimensions
+@perDimension
 def ps(spec, p0=0, p1=0):
     dim = spec.udic['ndim']-1
     if spec.udic[dim]['time']:
@@ -151,7 +151,7 @@ def ps(spec, p0=0, p1=0):
     corrected.udic[dim]['phc'] = (p0, p1)
     return corrected
 
-@both_dimensions
+@perDimension
 def _optimize_phase(spec, objfn, p0only):
     if objfn is None: #atan
         phc = atan(spec, p0only)
