@@ -1,6 +1,8 @@
 language: python
 python:
   - 2.7
+before_install:
+  - pip install --only-binary=numpy,scipy numpy scipy
 
 install:
   - python setup.py install
