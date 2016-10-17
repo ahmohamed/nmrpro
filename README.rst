@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/ahmohamed/nmrpro.svg?branch=release
+    :target: https://travis-ci.org/ahmohamed/nmrpro
+
 NMRPRo python package
 =====================
 
