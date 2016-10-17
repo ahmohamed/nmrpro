@@ -75,21 +75,6 @@ class DataUdic(np.ndarray):
 
 
 class NMRSpectrum(DataUdic):
-    @classmethod
-    def fromFile(cls, *args, **kwargs):
-        from nmrpro.readers import fromFile
-        return fromFile(*args, **kwargs)
-        
-    @classmethod
-    def fromBruker(cls, *args, **kwargs):
-        from nmrpro.readers import fromBruker
-        return fromBruker(*args, **kwargs)
-
-    @classmethod
-    def fromPipe(cls, *args, **kwargs):
-        from nmrpro.readers import fromPipe
-        return fromPipe(*args, **kwargs)
-
     def __new__(cls, input_array, udic, parent=None, uc=None):
         if input_array.ndim == 1:
             cls = NMRSpectrum1D

@@ -2,6 +2,7 @@ import unittest
 from nmrglue.process.proc_base import zf_size, fft
 from nmrglue.fileio.bruker import read
 import nmrglue as ng
+from nmrpro.reader import fromBruker, fromPipe
 from nmrpro.classes.NMRSpectrum import NMRSpectrum
 from .zf import zf1d, zf2d
 from nmrpro.plugins.FFT.fft import fft1d
@@ -16,7 +17,7 @@ class zf_1DTest(unittest.TestCase):
         #self.string = 'Hello World'
     
     def test_zf(self):
-        spec = NMRSpectrum.fromBruker(self.filename, False, False)
+        spec = fromBruker(self.filename, False, False)
         spec = zf1d(spec, size = 2**15)
         
         ts.assert_array_equal(spec, zf_size(self.data, 2**15), 'Simple Zero filling falied (see zf_size)')
@@ -26,7 +27,7 @@ class zf_1DTest(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_zf_object_overwrite(self):
-        spec = NMRSpectrum.fromBruker(self.filename, False, False)
+        spec = fromBruker(self.filename, False, False)
         zf1d(spec, size = 2**15)
         
         ts.assert_array_equal(spec, zf_size(self.data, 2**15), 'Simple Zero filling falied (see zf_size)')
@@ -36,7 +37,7 @@ class zf_1DTest(unittest.TestCase):
         
 
     def test_zf_with_fft(self):
-        spec = NMRSpectrum.fromBruker(self.filename, False, False)
+        spec = fromBruker(self.filename, False, False)
         spec = fft1d(spec, 'fft')
         spec = zf1d(spec, size = 2**15)
         
@@ -57,7 +58,7 @@ class zf_2DTest(unittest.TestCase):
 
     def test_zf_pipe(self):
         dic, data = self.dic, self.data
-        spec2d = NMRSpectrum.fromPipe(self.filename)
+        spec2d = fromPipe(self.filename)
         
         def zf2d_pipe(dic, data, size, size2):
             dic2, data2 = ng.pipe_proc.zf(dic,data, size=size)
@@ -73,7 +74,7 @@ class zf_2DTest(unittest.TestCase):
     
     def test_zf_auto(self):
         dic, data = self.dic, self.data
-        spec2d = NMRSpectrum.fromPipe(self.filename)
+        spec2d = fromPipe(self.filename)
         
         spec2d = zf2d(spec2d)
         self.assertEqual(spec2d.shape, (512, 1900), 'Incorrect size in zero filling with size=auto')

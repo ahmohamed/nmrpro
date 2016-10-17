@@ -1,11 +1,12 @@
 import unittest
+from nmrpro.reader import fromBruker, fromPipe, fromFile
 from .NMRSpectrum import NMRSpectrum, NMRDataset
 import numpy.testing as ts
 import nmrglue as ng
 
 class SpectrumTest(unittest.TestCase):
     def setUp(self):
-        spec1d = NMRSpectrum.fromFile('./test_files/Bruker_1D/', 'Bruker')
+        spec1d = fromFile('./test_files/Bruker_1D/', 'Bruker')
         self.spec1d = spec1d
         self.fid_file = './test_files/bmse000281_hsqc.fid'
 
@@ -18,7 +19,7 @@ class SpectrumTest(unittest.TestCase):
     
 class DatasetTest(unittest.TestCase):
     def setUp(self):
-        spec1d = NMRSpectrum.fromFile('./test_files/Bruker_1D/', 'Bruker')
+        spec1d = fromFile('./test_files/Bruker_1D/', 'Bruker')
         ds = NMRDataset(1, spec1d, spec1d, spec1d)
         self.ds = ds
         self.spec1d = spec1d
@@ -57,7 +58,7 @@ class DatasetTest(unittest.TestCase):
         
     def test_di(self):
         dic, data = ng.pipe.read(self.fid_file)
-        spec2d = NMRSpectrum.fromPipe(self.fid_file)
+        spec2d = fromPipe(self.fid_file)
         
         
         self.assertEqual(data.dtype, spec2d.dtype, 'Initial dtype dont match')

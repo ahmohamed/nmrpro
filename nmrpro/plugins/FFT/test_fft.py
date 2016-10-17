@@ -1,5 +1,6 @@
 import unittest
 import nmrglue as ng
+from nmrpro.reader import fromBruker, fromPipe
 from nmrpro.classes.NMRSpectrum import NMRSpectrum
 from nmrpro.plugins.PluginMount import JSCommand
 from .fft import fft1d
@@ -16,14 +17,14 @@ class fft_1DTest(unittest.TestCase):
         #self.string = 'Hello World'
     
     def test_fft_norm(self):
-        spec = NMRSpectrum.fromBruker(self.filename, False, False)
+        spec = fromBruker(self.filename, False, False)
         spec = fft1d(spec, 'norm')
         
         ts.assert_array_equal(spec, ng.process.proc_base.fft_norm(self.data), 'FFT_norm failed')
         self.assertEqual(spec.udic[0]['freq'], True, 'Spec udic not modified to freq=True')
 
     def test_fft_pos(self):
-        spec = NMRSpectrum.fromBruker(self.filename, False, False)
+        spec = fromBruker(self.filename, False, False)
         spec = fft1d(spec, 'pos')
         
         ts.assert_array_equal(spec, ng.process.proc_base.fft_positive(self.data), 'FFT_positive failed')
@@ -31,14 +32,14 @@ class fft_1DTest(unittest.TestCase):
     
     @unittest.expectedFailure    
     def test_fft_object_overwrite(self):
-        spec = NMRSpectrum.fromBruker(self.filename, False, False)
+        spec = fromBruker(self.filename, False, False)
         fft1d(spec, 'fft')
         
         ts.assert_array_equal(spec, ng.process.proc_base.fft(self.data), 'Simple FFT falied')
         self.assertEqual(spec.udic[0]['freq'], True, 'Spec udic not modified to freq=True')
 
     def test_fft_repeatable_fft(self):
-        spec = NMRSpectrum.fromBruker(self.filename, False, False)
+        spec = fromBruker(self.filename, False, False)
         spec = fft1d(spec, 'norm')
         spec = fft1d(spec, 'norm')
         
@@ -46,7 +47,7 @@ class fft_1DTest(unittest.TestCase):
         self.assertEqual(spec.udic[0]['freq'], True, 'Spec udic not modified to freq=True')
 
     def test_fft_multiple_fft(self):
-        spec = NMRSpectrum.fromBruker(self.filename, False, False)
+        spec = fromBruker(self.filename, False, False)
         spec = fft1d(spec)
         spec = fft1d(spec, 'norm')
         
@@ -63,7 +64,7 @@ class fft_2DTest(unittest.TestCase):
         
     def test_fft_pipe(self):
         dic, data = self.dic, self.data
-        spec2d = NMRSpectrum.fromPipe(self.filename)
+        spec2d = fromPipe(self.filename)
         # testing hypercomplex
         fn = "FDF" + str(int(dic["FDDIMORDER"][0]))
         fn2 = "FDF" + str(int(dic["FDDIMORDER"][1]))
@@ -121,7 +122,7 @@ class fftCommandTest(unittest.TestCase):
         self.d2_file = "./test_files/bmse000281_hsqc.fid"
             
     def test_fft_command_1d(self):
-        spec = NMRSpectrum.fromBruker(self.d1_file, False, False)
+        spec = fromBruker(self.d1_file, False, False)
         spec = self.command(spec, {})
         
         dic, data = ng.bruker.read(self.d1_file, read_pulseprogram=False)
@@ -132,7 +133,7 @@ class fftCommandTest(unittest.TestCase):
         ts.assert_array_equal(spec, ng.process.proc_base.fft_positive(data), 'Repetitive 1D FFT command failed')
     
     def test_fft_command_2d(self):
-        spec = NMRSpectrum.fromPipe(self.d2_file)
+        spec = fromPipe(self.d2_file)
         spec = self.command(spec, {})
         
         dic, data = ng.pipe.read(self.d2_file)
