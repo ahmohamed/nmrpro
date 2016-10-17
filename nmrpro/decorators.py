@@ -20,6 +20,12 @@ def wraps(f):
 
 def jsCommand(path, nd, args='auto'):
     def decorator(f):
+        if not hasattr(f, '__input_class'):
+            raise AttributeError(
+                'Functions should have an input class defined before jsCommand '
+                'decorator can be used. Use perSpectrum decorator first on '
+                '%s function.' % f.__name__)
+            
         classname = "autogen_" + f.__name__ 
         
         if args == 'auto':
@@ -192,7 +198,7 @@ def perSpectrum(f):
         
         return proc_spec(*args, **kwargs)
         
-
+    newf.__input_class = 'spectrum'
     return newf
 
 def perRow(f):

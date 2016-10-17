@@ -147,6 +147,7 @@ def apod(spec, inv=False, c=1., *windows, **kwwindows):
     
 
 @jsCommand(['Processing', 'Apodization', 'Expoenential line broadnening (auto)'], [1,2], args=None)
+@perSpectrum
 def _em_apod(s):
     return apod(s, w=lambda s: EM(s, 0.2))
 
