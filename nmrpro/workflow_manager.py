@@ -1,6 +1,6 @@
 from workflows import WorkflowStep
 from copy import deepcopy
-from .classes.NMRSpectrum import NMRSpectrum
+from .classes.NMRSpectrum import NMRSpectrum, SpecFeature
 import traceback
 
 class WFManager:
@@ -11,12 +11,14 @@ class WFManager:
     
     @classmethod
     def computeStep(cls, step, spec):
+        
         if _islocked('no_transpose', spec):
             traceback.print_stack()
         wf = deepcopy(spec.history)
         all_steps = wf._steps
         idx, replace = wf._get_order_idx(step)
         
+        print([st.operation_name for st in all_steps])
         
         before_idx = after_idx = idx
         if replace:
@@ -44,6 +46,7 @@ class WFManager:
                 # The function modified the history itself.
                 # history contains at least one operation.
                 
+                ret.spec_flags["data_updated"] = True
                 return ret # we trust the function.
             
             # By now, ret.history either contains the input_ history or is empty
@@ -56,8 +59,28 @@ class WFManager:
             # Add the step to the worflow
             wf.append(step)
             ret.history = wf
-         
+            
+            ret.spec_flags["data_updated"] = True
+            return ret
+        
+        if isinstance(ret, SpecFeature):
+            new_spec = annotate(ret.spec, ret.data)
+            step._computed = (annotate, (ret.data,), {})
+            wf.append(step)
+            new_spec.history = wf
+            
+            return new_spec
+            
         return ret
+
+def annotate(spec, feature):
+    print('annotate', type(spec))
+    if not hasattr(spec, "annotation"):
+        spec.annotation = []
+    
+    spec.annotation.append(feature)
+    return spec
+    
         
 def _islocked(lock_name, s):
     if hasattr(s, 'spec_flags') and s.spec_flags.has_key(lock_name):

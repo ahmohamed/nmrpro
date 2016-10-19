@@ -87,10 +87,13 @@ class NMRSpectrum(DataUdic):
             history = Workflow()
             original = DataUdic(input_array, udic)
             flags = {}
+            annotation = []
         else:
             history = parent.history
             original = parent.original
             flags = parent.spec_flags
+            annotation = parent.annotation
+            
             if uc is None: uc = parent.uc
         
         # add the new attribute to the created instance
@@ -102,12 +105,15 @@ class NMRSpectrum(DataUdic):
                                     udic[i]['car'])
                 for i in range(0, udic['ndim'])]
 
+        if hasattr(input_array, 'annotation'):
+            obj.annotation = input_array.annotation
         
         obj.udic = udic
         obj.uc = uc
         obj.history = history
         obj.original = original
         obj.spec_flags = flags
+        obj.annotation = annotation
         return obj
 
     def __array_finalize__(self, obj):
@@ -118,6 +124,7 @@ class NMRSpectrum(DataUdic):
         self.history = getattr(obj, 'history', None)
         self.original = getattr(obj, 'original', None)
         self.spec_flags = getattr(obj, 'spec_flags', {})
+        self.annotation = getattr(obj, 'annotation', [])
 
     ################# Slicing with units  #####################
     def __getitem__(self, idx):
@@ -177,6 +184,8 @@ class NMRSpectrum(DataUdic):
         self.dtype = input_array.dtype
         self.shape = input_array.shape
         self.udic = udic
+        if hasattr(input_array, 'annotation'):
+            self.annotation = input_array.annotation
 
         return self
 
