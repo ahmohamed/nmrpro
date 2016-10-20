@@ -6,8 +6,13 @@ from classes.NMRSpectrum import NMRSpectrum
 import nmrglue.process.pipe_proc as pp
 from nmrglue import __version__ as ng_version
 from .exceptions import NoNMRDataError
+import os.path
 
 ng_version = float(ng_version[:3])
+
+def get_name(file):
+    filename = os.path.basename(file)
+    return os.path.splitext(filename)[0]
 
 def fromFile(file, format='auto'):
     if format == 'auto':
@@ -44,7 +49,7 @@ def fromBruker(file, remove_filter=True, read_pdata=True):
     
     u = bruker.guess_udic(dic, data)    
     u["original_format"] = 'Bruker'
-    u["Name"] = str(file)
+    u["Name"] = get_name(file)
     if(read_pdata):
         for i in range(0, data.ndim):
             u[i]['complex'] = False
@@ -68,7 +73,7 @@ def fromPipe(file):
 
     u = pipe.guess_udic(dic, data)
     u["original_format"] = 'Pipe'
-    u["Name"] = str(file)
+    u["Name"] = get_name(file)
     
     uc = [make_uc_pipe(dic, data, dim) for dim in range(0, data.ndim)]
     return NMRSpectrum(data, u, uc=uc)
