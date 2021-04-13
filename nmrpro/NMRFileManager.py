@@ -1,8 +1,9 @@
 from os.path import isfile, isdir, isabs, basename, exists, join
 from os import walk, fdopen
 import shutil
-from tarfile import open
+import tarfile
 import tempfile
+import zipfile
 from fnmatch import filter
 #import re
 temp = tempfile.gettempdir()
@@ -37,26 +38,38 @@ def get_files(_file):
     
     print("_file", _file)
     # if the input is a file, then it may be a tar, NMRPipe or ucsf file
-    if is_obj or isfile(_file):        
+    if is_obj or isfile(_file):
+
         if filename.endswith((".tar.gz",".tar")):
-            if(filename.endswith(".tar")): filebasename = filename[:-4]
-            else: filebasename = filename[:-7]
-            
+            filebasename = filename.rstrip(".gz").rstrip(".tar")
+
             temp_dir = join(temp, filebasename)
             # TODO: this would overwrite extracted files.
             if exists(temp_dir):
                 shutil.rmtree(temp_dir)
-                
+
             if is_obj:
-                tar = open(fileobj=_file)
+                tar = tarfile.open(fileobj=_file)
             else:
-                tar = open(_file)
+                tar = tarfile.open(_file)
             tar.extractall(path=temp_dir)
             tar.close()
-            
+
             return get_files(temp_dir)
-            
-        
+
+        if filename.endswith((".zip", ".gzip")):
+            filebasename = filename.rstrip(".gzip").rstrip(".zip")
+
+            temp_dir = join(temp, filebasename)
+            # TODO: this would overwrite extracted files.
+            if exists(temp_dir):
+                shutil.rmtree(temp_dir)
+
+            with zipfile.ZipFile(_file) as zip_object:
+                zip_object.extractall(path=temp_dir)
+
+            return get_files(temp_dir)
+
         if filename.endswith((".ft", ".ft2", ".fid")):
             if is_obj:
                 filepath = get_file_path(_file)
@@ -65,7 +78,7 @@ def get_files(_file):
                 filepath = _file
                 
             return [(filepath, 'Pipe')]
-        
+
         if filename.endswith(".ucsf"):
             if is_obj:
                 filepath = get_file_path(_file)
@@ -73,7 +86,7 @@ def get_files(_file):
                 filepath = _file
             
             return [(filepath, 'Sparky')]
-            
+
     elif not is_obj and isdir(_file):
         files = []
         for root, dirnames, filenames in walk(_file):
@@ -83,7 +96,7 @@ def get_files(_file):
                 if ( join(root, filename), "Pipe") not in files: files.append( ( join(root, filename),"Pipe") )
             for filename in filter(filenames, "*.ucsf"):
                 if (join(root, filename), "Sparky") not in files: files.append( (join(root, filename),"Sparky") )
-        
+
         if len(files) > 0: return files
 
     return None
