@@ -2,7 +2,7 @@ from nmrglue.fileio import bruker, pipe
 from nmrglue.fileio.fileiobase import unit_conversion, uc_from_udic
 from .utils import make_uc_pipe
 from .NMRFileManager import get_files, find_pdata
-from classes.NMRSpectrum import NMRSpectrum
+from .classes.NMRSpectrum import NMRSpectrum
 import nmrglue.process.pipe_proc as pp
 from nmrglue import __version__ as ng_version
 from .exceptions import NoNMRDataError

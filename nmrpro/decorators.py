@@ -1,16 +1,17 @@
 import sys
 from copy import deepcopy
-from classes.NMRSpectrum import NMRSpectrum, NMRDataset, DataUdic
+from .classes.NMRSpectrum import NMRSpectrum, NMRDataset, DataUdic
 from .workflows import Workflow, WorkflowStep
 from .workflow_manager import WFManager
 from .plugins.PluginMount import JSCommand
 from .plugins.JSinput2 import _parse_interactive_func, Input, ArgsPanel
+from . import ipynb as nb
 
 from numpy import array
 import re
 from functools import wraps as wrp
 import inspect
-import ipynb as nb
+
 
 __all__ = ['perSpectrum', 'perRow', 'perDimension', 'jsCommand', 'forder', 'interaction', 'ndarray_subclasser']
 
@@ -223,11 +224,11 @@ def _lock(lock_name, *specs):
 
 def _unlock(lock_name, *specs):
     for s in specs:
-        if hasattr(s, 'spec_flags') and s.spec_flags.has_key(lock_name):
+        if hasattr(s, 'spec_flags') and lock_name in s.spec_flags:
             del s.spec_flags[lock_name]
 
 def _islocked(lock_name, s):
-    if hasattr(s, 'spec_flags') and s.spec_flags.has_key(lock_name):
+    if hasattr(s, 'spec_flags') and lock_name in s.spec_flags:
         return s.spec_flags[lock_name]
     
     return False

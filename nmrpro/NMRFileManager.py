@@ -31,7 +31,7 @@ def get_files(_file):
         filename = basename(_file.name)
         is_obj = True
     except AttributeError:
-        if not isinstance(_file, basestring):
+        if not isinstance(_file, str):
             raise ValueError('_file should be either a string or a file-like object.')
         
         filename = basename(_file)

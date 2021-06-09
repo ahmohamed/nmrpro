@@ -1,8 +1,8 @@
-from workflows import WorkflowStep
+from .workflows import WorkflowStep
 from copy import deepcopy
 from .classes.NMRSpectrum import NMRSpectrum
 import traceback
-
+from functools import reduce
 class WFManager:
     @classmethod
     def excuteSteps(cls, steps, seed):
@@ -60,7 +60,7 @@ class WFManager:
         return ret
         
 def _islocked(lock_name, s):
-    if hasattr(s, 'spec_flags') and s.spec_flags.has_key(lock_name):
+    if hasattr(s, 'spec_flags') and lock_name in s.spec_flags:
         return s.spec_flags[lock_name]
     
     return False

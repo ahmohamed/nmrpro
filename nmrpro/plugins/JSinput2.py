@@ -241,7 +241,7 @@ def _parse_interactive_args(kwargs, kwlables=None, kwdefaults=None):
     kwdefaults = kwdefaults or {}
     
     all_ = []
-    for k,v in kwargs.iteritems():
+    for k,v in kwargs.items():
         _label = kwlables.pop(k, None)
         dft = kwdefaults.pop(k, None)
         all_.append(_abbrev(k, v, _label, dft))
@@ -250,11 +250,11 @@ def _parse_interactive_args(kwargs, kwlables=None, kwdefaults=None):
     
 def _abbrev_single_value(varname, o, label, value):
     """Make widgets from single values, which can be used as parameter defaults."""
-    if isinstance(o, basestring):
+    if isinstance(o, str):
         return Text(varname, label, o)
     elif isinstance(o, dict):
         return Select(varname, label,
-                      *[Option(var, lab) for lab, var in o.iteritems()]
+                      *[Option(var, lab) for lab, var in o.items()]
                      )
     elif isinstance(o, bool):
         return Boolean(varname, label, o)
@@ -273,7 +273,7 @@ def _abbrev_single_value(varname, o, label, value):
 def _abbrev(varname, o, label, value):
     """Make widgets from abbreviations: single values, lists or tuples."""
     if isinstance(o, (list, tuple)) and len(o) > 1:
-        if o and all(isinstance(x, basestring) for x in o):
+        if o and all(isinstance(x, str) for x in o):
             return Select(varname, label, #TODO: What about value?
                           *[Option(k) for k in o]
                          )
@@ -286,7 +286,7 @@ def _abbrev(varname, o, label, value):
         return _abbrev_single_value(varname, o, label, value)
     
 def _mangle_dict_keys(d, name):
-    for k in d.keys():
+    for k in d.copy().keys():
         v = d.pop(k)
         if isinstance(v, dict):
             v = _mangle_dict_keys(v, name)

@@ -1,6 +1,6 @@
 from pkgutil import walk_packages
 from importlib import import_module
-from PluginMount import JSCommand
+from .PluginMount import JSCommand
 '''
 Recursively import all sub-packages in plugins.
 Since all plugins are subclasses of JSCommand,

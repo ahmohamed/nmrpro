@@ -1,4 +1,4 @@
-from utils import listIndexOf, indexOf, get_package_name
+from .utils import listIndexOf, indexOf, get_package_name
 import numpy as np
 
 class WorkflowStep:

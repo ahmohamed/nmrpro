@@ -62,14 +62,14 @@ def TM(spec, t1=0.0, t2=0.0):
     n = spec.shape[-1]
     
     t1, t2 = float(t1), float(t2)
-    return np.concatenate((np.linspace(0, 1, t1), np.ones(n - t1 - t2), np.linspace(1, 0, t2)))
+    return np.concatenate((np.linspace(0, 1, int(t1)), np.ones(int(n - t1 - t2)), np.linspace(1, 0, int(t2)) ))
 
 def TRI(spec, loc=-1, lHi=0.0, rHi=0.0): 
     n = spec.shape[-1]
     if loc == -1:
         loc = float(n)/2
         
-    loc, lHi, rHi = float(loc), float(lHi), float(rHi) 
+    loc, lHi, rHi = int(loc), float(lHi), float(rHi) 
     return np.concatenate((np.linspace(lHi, 1., loc), np.linspace(1., rHi, n - loc + 1)[1:]))
 
 ########## MNOVA functions ##############

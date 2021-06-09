@@ -8,9 +8,9 @@ import logging
 import traceback
 
 try:
-    basestring
+    str
 except NameError:
-    basestring = str
+    str = str
 
 
 def is_number(s):
@@ -264,7 +264,7 @@ def icoshift(xt,  xp,  inter='whole',  n='f', scale=None, coshift_preprocessing=
     whole = False
     flag2 = False
 
-    if isinstance(inter, basestring):
+    if isinstance(inter, str):
 
         if inter == 'whole':
             inter = numpy.array([0, mp]).reshape(1, -1)
@@ -339,7 +339,7 @@ def icoshift(xt,  xp,  inter='whole',  n='f', scale=None, coshift_preprocessing=
     nint, mint = inter.shape
     scfl = numpy.array_equal(numpy.fix(scale), scale) and not using_custom_scale
 
-    if isinstance(inter, basestring) and n not in ['b', 'f']:
+    if isinstance(inter, str) and n not in ['b', 'f']:
         raise(Exception, '"n" must be a scalar b or f')
 
     elif isinstance(n, int) or isinstance(n, float):

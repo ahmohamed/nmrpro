@@ -131,7 +131,7 @@ class NMRSpectrum(DataUdic):
     def _convert_slice(self, s, dim=0):
         start = self._convert_unit(s.start)
         stop = self._convert_unit(s.stop)
-        if isinstance(s.step, basestring):
+        if isinstance(s.step, str):
             step = self.interval(s.step)
         else : step = s.step
     
@@ -141,7 +141,7 @@ class NMRSpectrum(DataUdic):
         if isinstance(idx, slice):
             return self._convert_slice(idx)
     
-        if isinstance(idx, basestring):
+        if isinstance(idx, str):
             #TODO: testing on 2D dimensions, negative indices, very small steps
             # testing if/when uc should be updated, esp. in states encoding.
             number, unit = num_unit(idx)

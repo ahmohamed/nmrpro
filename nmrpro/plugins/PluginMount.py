@@ -12,19 +12,19 @@ class PluginMount(type):
             # track of it later.
             cls.plugins.append(cls)
 
-class JSCommand:
-    __metaclass__ = PluginMount
+class JSCommand(object, metaclass=PluginMount):
+    # __metaclass__ = PluginMount
     
     @staticmethod
     def shorten(name, dic):
         name = name.strip('_')
-        if not dic.has_key(name[0:1]):
+        if name[0:1] not in dic:
             return name[0:1]
-        elif not dic.has_key(name[0:2]):
+        elif name[0:2] not in dic:
             return name[0:2]
         else:
             i=0
-            while dic.has_key(name[0:2]+repr(i)):
+            while (name[0:2]+repr(i)) in dic:
                 i = i+1
             return name[0:2]+repr(i)
     
