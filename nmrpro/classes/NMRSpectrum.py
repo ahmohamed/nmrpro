@@ -5,6 +5,7 @@ from collections import OrderedDict
 from nmrpro.utils import num_unit
 from nmrpro.workflows import Workflow, WorkflowStep
 from copy import deepcopy
+from functools import reduce
 
 class DataUdic(np.ndarray):
     def __new__(cls, data, udic):
