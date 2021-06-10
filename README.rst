@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/ahmohamed/nmrpro.svg?branch=release
-    :target: https://travis-ci.org/ahmohamed/nmrpro
+.. image:: https://github.com/ahmohamed/nmrpro/actions/workflows/unittest.yml/badge.svg
+    :target: https://github.com/ahmohamed/nmrpro/actions/workflows/unittest.yml
 
 NMRPRo python package
 =====================

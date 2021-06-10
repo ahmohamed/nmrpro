@@ -6,6 +6,7 @@
 *.*~
 
 .ipynb*
+build/*
 dist/*
 *.egg-info/*
 
