@@ -5,7 +5,13 @@ import tarfile
 import tempfile
 import zipfile
 from fnmatch import filter
-#import re
+
+from .constants import BRUKER_FORMAT
+from .constants import AUTODETECT_FORMAT
+from .constants import PIPE_FORMAT
+from .constants import SPARKY_FORMAT
+
+
 temp = tempfile.gettempdir()
 
 def temp_save(data):
@@ -77,7 +83,7 @@ def get_files(_file):
             else:
                 filepath = _file
                 
-            return [(filepath, 'Pipe')]
+            return [(filepath, PIPE_FORMAT)]
 
         if filename.endswith(".ucsf"):
             if is_obj:
@@ -85,17 +91,20 @@ def get_files(_file):
             else:
                 filepath = _file
             
-            return [(filepath, 'Sparky')]
+            return [(filepath, SPARKY_FORMAT)]
 
     elif not is_obj and isdir(_file):
         files = []
         for root, dirnames, filenames in walk(_file):
             for filename in filter(filenames, "acqu*"):
-                if (root, "Bruker") not in files: files.append((root,"Bruker"))
+                if (root, BRUKER_FORMAT) not in files:
+                    files.append((root, BRUKER_FORMAT))
             for filename in filter(filenames, "*.ft*"):
-                if ( join(root, filename), "Pipe") not in files: files.append( ( join(root, filename),"Pipe") )
+                if ( join(root, filename), PIPE_FORMAT) not in files:
+                    files.append( ( join(root, filename), PIPE_FORMAT) )
             for filename in filter(filenames, "*.ucsf"):
-                if (join(root, filename), "Sparky") not in files: files.append( (join(root, filename),"Sparky") )
+                if (join(root, filename), SPARKY_FORMAT) not in files:
+                    files.append( (join(root, filename), SPARKY_FORMAT) )
 
         if len(files) > 0: return files
 

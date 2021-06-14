@@ -7,6 +7,11 @@ import nmrglue.process.pipe_proc as pp
 from nmrglue import __version__ as ng_version
 from .exceptions import NoNMRDataError
 
+from .constants import BRUKER_FORMAT
+from .constants import AUTODETECT_FORMAT
+from .constants import PIPE_FORMAT
+from .constants import SPARKY_FORMAT
+
 ng_version = float(ng_version[:3])
 
 def get_name(file):
@@ -17,6 +22,8 @@ def fromFile(*args, **kwargs):
     results = [spectra for spectra in _fromFile(*args, **kwargs)  if spectra is not None]
     if not results:
         raise NoNMRDataError("The path supplied has no NMR spectra.")
+    if len(results) == 1:
+        return results[0]
     return results
 
 def _fromFile(file, format=AUTODETECT_FORMAT):
