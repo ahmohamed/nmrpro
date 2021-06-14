@@ -14,26 +14,33 @@ def get_name(file):
     filename = os.path.basename(file)
     return os.path.splitext(filename)[0]
 
-def fromFile(file, format='auto'):
-    if format == 'auto':
-        files = get_files(file)
-        
-        if files is None:
-            raise NoNMRDataError('The path supplied has no NMR spectra: %s' %file)
-        elif len(files) == 1:
-            return fromFile(*files[0])
-        else:
-            return [fromFile(*f) for f in files]
-            
-    method = {
-        'Bruker': fromBruker,
-        'Pipe': fromPipe
-    }[format]
+def fromFile(*args, **kwargs):
+    results = [spectra for spectra in _fromFile(*args, **kwargs)  if spectra is not None]
+    if not results:
+        raise NoNMRDataError("The path supplied has no NMR spectra.")
+    return results
 
-    return method(file)
+def _fromFile(file, format=AUTODETECT_FORMAT):
+    if format == AUTODETECT_FORMAT:
+        gen = (
+            result
+            for file, format in get_files(file)
+            for result in _fromFile(file, format=format)
+        )
+    elif format == BRUKER_FORMAT:
+        gen = (fromBruker(file), )
+    elif format == PIPE_FORMAT:
+        gen = (fromPipe(file), )
+    else:
+        raise ValueError("Unknown format: {}".format(format))
+    for spectra in gen:
+        yield spectra
 
 def fromBruker(file, remove_filter=True, read_pdata=True):
-    dic, data = bruker.read(file);
+    try:
+        dic, data = bruker.read(file)
+    except IOError:
+        return None
     if read_pdata:
         pdata_file = find_pdata(file, data.ndim)
         
