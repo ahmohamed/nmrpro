@@ -4,9 +4,15 @@ from .NMRSpectrum import NMRSpectrum, NMRDataset
 import numpy.testing as ts
 import nmrglue as ng
 
+from nmrpro.constants import BRUKER_FORMAT
+from nmrpro.constants import AUTODETECT_FORMAT
+from nmrpro.constants import PIPE_FORMAT
+from nmrpro.constants import SPARKY_FORMAT
+
+
 class SpectrumTest(unittest.TestCase):
     def setUp(self):
-        spec1d = fromFile('./test_files/Bruker_1D/', 'Bruker')
+        spec1d = fromFile('./test_files/Bruker_1D/', BRUKER_FORMAT)
         self.spec1d = spec1d
         self.fid_file = './test_files/bmse000281_hsqc.fid'
 
@@ -19,7 +25,7 @@ class SpectrumTest(unittest.TestCase):
     
 class DatasetTest(unittest.TestCase):
     def setUp(self):
-        spec1d = fromFile('./test_files/Bruker_1D/', 'Bruker')
+        spec1d = fromFile('./test_files/Bruker_1D/', BRUKER_FORMAT)
         ds = NMRDataset(1, spec1d, spec1d, spec1d)
         self.ds = ds
         self.spec1d = spec1d
